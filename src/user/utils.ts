@@ -1,9 +1,30 @@
+import { GaxiosError } from 'gaxios';
 import { Auth, google } from 'googleapis';
-import TandainError from '../utils/TandainError';
 
-import { GOOGLE_EXHANGE_TOKEN_ERROR, PARAM_CODE_INVALID } from './errors';
+import TandainError from '../utils/TandainError';
+import {
+	GOOGLE_EXHANGE_TOKEN_ERROR,
+	PARAM_CODE_INVALID,
+	PARAM_REDIRECT_URI_INVALID,
+} from './errors';
+import { GetTokenError } from './utils.types';
 
 export const exchangeOAuthCode = (code: string, redirectUri: string) => {
+	const generateGetTokenError = (error: GaxiosError<GetTokenError>) => {
+		const { response, code } = error;
+		const messages = {
+			invalid_request: PARAM_REDIRECT_URI_INVALID,
+			invalid_grant: PARAM_CODE_INVALID,
+			exhange_token_error: GOOGLE_EXHANGE_TOKEN_ERROR,
+		};
+
+		const errorName = response?.data.error || 'exhange_token_error';
+		const errorMessage = messages[errorName];
+		const errorCode = parseInt(code as string);
+
+		return { errorName, errorMessage, errorCode };
+	};
+
 	return new Promise<Auth.Credentials>((resolve, reject) => {
 		{
 			const credentials = {
@@ -20,15 +41,10 @@ export const exchangeOAuthCode = (code: string, redirectUri: string) => {
 
 			oauth2Client.getToken(code, (err, credentials) => {
 				if (err) {
-					const { response, code } = err;
-					const errorName = response?.data.error;
-					const errorCode = parseInt(code as string);
+					const { errorName, errorMessage, errorCode } =
+						generateGetTokenError(err);
 
-					const error = new TandainError(
-						errorName,
-						PARAM_CODE_INVALID,
-						errorCode
-					);
+					const error = new TandainError(errorName, errorMessage, errorCode);
 
 					reject(error);
 				}
