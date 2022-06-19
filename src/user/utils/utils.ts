@@ -1,12 +1,14 @@
+import axios from 'axios';
 import { GaxiosError } from 'gaxios';
 import { Auth, google } from 'googleapis';
 
-import TandainError from '../utils/TandainError';
+import TandainError from '../../utils/TandainError';
+
 import {
 	GOOGLE_EXHANGE_TOKEN_ERROR,
 	PARAM_CODE_INVALID,
 	PARAM_REDIRECT_URI_INVALID,
-} from './errors';
+} from '../errors';
 import { GetTokenError } from './utils.types';
 
 export const exchangeOAuthCode = (code: string, redirectUri: string) => {
@@ -55,4 +57,30 @@ export const exchangeOAuthCode = (code: string, redirectUri: string) => {
 			});
 		}
 	});
+};
+
+export const getUserProfile = async (accessToken: string) => {
+	const url = 'https://people.googleapis.com/v1/people/me';
+	const params = {
+		personFields: encodeURI('names,photos,emailAddresses'),
+	};
+
+	try {
+		const { data } = await axios.get(url, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+			params,
+		});
+
+		const userProfile = {
+			name: data.names[0].displayName,
+			email: data.emailAddresses[0].value,
+			photoURL: data.photos[0].url,
+		};
+
+		return userProfile;
+	} catch (err) {
+		throw new TandainError("GET_USER_PROFILE_ERROR", err.message, 500);
+	}
 };

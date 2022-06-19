@@ -1,5 +1,5 @@
-import { generateRandomString } from '../utils/globals';
-import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from './errors';
+import { generateRandomString } from '../../utils/globals';
+import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 import { exchangeOAuthCode } from './utils';
 
 const mockAuthCode =
