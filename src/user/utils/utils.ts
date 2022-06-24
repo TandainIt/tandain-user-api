@@ -2,7 +2,7 @@ import axios from 'axios';
 import { GaxiosError } from 'gaxios';
 import { Auth, google } from 'googleapis';
 
-import TandainError from '../../utils/TandainError';
+import TandainError from '@/utils/TandainError';
 
 import {
 	GOOGLE_EXHANGE_TOKEN_ERROR,
@@ -46,7 +46,11 @@ export const exchangeOAuthCode = (code: string, redirectUri: string) => {
 					const { errorName, errorMessage, errorCode } =
 						generateGetTokenError(err);
 
-					const error = new TandainError(errorName, errorMessage, errorCode);
+					const error = new TandainError(errorMessage, {
+						name: errorName,
+						code: errorCode,
+						location: 'exchangeOAuthCode',
+					});
 
 					reject(error);
 				}
@@ -81,6 +85,9 @@ export const getUserProfile = async (accessToken: string) => {
 
 		return userProfile;
 	} catch (err) {
-		throw new TandainError("GET_USER_PROFILE_ERROR", err.message, 500);
+		throw new TandainError(err.message, {
+			code: err.code,
+			location: 'getUserProfile',
+		});
 	}
 };

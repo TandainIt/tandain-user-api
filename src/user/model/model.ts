@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 import { GenerateJWTArgs } from './model.types';
 import { QueryResult } from 'pg';
-import TandainError from '../../utils/TandainError';
+import TandainError from '@/utils/TandainError';
 
 class User {
 	public id: number;
@@ -31,7 +31,7 @@ class User {
 
 			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
-			throw new Error(err.detail);
+			throw new TandainError(err.detail);
 		}
 	}
 
@@ -48,7 +48,7 @@ class User {
 
 			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
-			throw new Error(err.detail);
+			throw new TandainError(err.detail);
 		}
 	}
 

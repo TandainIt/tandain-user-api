@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 
+import TandainError from '@/utils/TandainError';
 import User from './model';
 
 jest.mock('pg', () => {
@@ -12,7 +13,7 @@ jest.mock('pg', () => {
 });
 
 describe('user/model', () => {
-	let pool: any;
+	let pool: any; // TODO: Change type to be more specific
 
 	beforeEach(async () => {
 		pool = new Pool();
@@ -61,7 +62,7 @@ describe('user/model', () => {
 			expect(user).toEqual(mockRows.rows[0]);
 		});
 
-		it('should throw error', async () => {
+		it('should throw an error when create duplicate user', async () => {
 			const posgresqlError = {
 				name: 'error',
 				code: '23505',
@@ -71,7 +72,7 @@ describe('user/model', () => {
 
 			await expect(
 				User.create('test', 'test@test.com', 'test.jpg')
-			).rejects.toThrow();
+			).rejects.toThrowError(TandainError);
 		});
 	});
 
@@ -107,7 +108,7 @@ describe('user/model', () => {
 			expect(user).toEqual(null);
 		});
 
-		it('should throw error', async () => {
+		it('should throw an error when PostgreSQL system is error', async () => {
 			const posgresqlError = {
 				name: 'system_error',
 				code: '58000',
@@ -115,7 +116,9 @@ describe('user/model', () => {
 
 			pool.query.mockRejectedValue(posgresqlError);
 
-			await expect(User.findByEmail('test@test.com')).rejects.toThrow();
+			await expect(User.findByEmail('test@test.com')).rejects.toThrowError(
+				TandainError
+			);
 		});
 	});
 
