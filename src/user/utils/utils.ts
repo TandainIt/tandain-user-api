@@ -85,8 +85,10 @@ export const getUserProfile = async (accessToken: string) => {
 
 		return userProfile;
 	} catch (err) {
-		throw new TandainError(err.message, {
-			code: err.code,
+		const error = err.response.data.error;
+
+		throw new TandainError(error.message, {
+			code: error.code,
 			location: 'getUserProfile',
 		});
 	}

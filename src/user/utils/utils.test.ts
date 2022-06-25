@@ -1,6 +1,7 @@
+import axios from 'axios';
 import { generateRandomString } from '../../utils/globals';
 import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
-import { exchangeOAuthCode } from './utils';
+import { exchangeOAuthCode, getUserProfile } from './utils';
 
 const mockAuthCode =
 	'4/0AX4XfWir9vd_2qLAage1Ti57r-UMSZN8hngC_CoJpTVTApp1ByoecQi0q6TX5Uf1dJ6p-A';
@@ -57,6 +58,14 @@ jest.mock('googleapis', () => {
 	};
 });
 
+jest.mock('axios');
+
+let mockAxios: jest.Mocked<typeof axios>;
+
+beforeEach(() => {
+	mockAxios = axios as jest.Mocked<typeof axios>;
+});
+
 describe('exchangeOAuthCode', () => {
 	afterEach(() => {
 		jest.clearAllMocks();
@@ -84,5 +93,46 @@ describe('exchangeOAuthCode', () => {
 		exchangeOAuthCode(mockAuthCode, mockFalseRedirectUri).catch((err) => {
 			expect(err.message).toBe(PARAM_REDIRECT_URI_INVALID);
 		});
+	});
+});
+
+describe('getUserProfile', () => {
+	it('should return user profile object', async () => {
+		const mockAccessToken = generateRandomString();
+		mockAxios.get.mockResolvedValue({
+			data: {
+				names: [{ displayName: 'test' }],
+				emailAddresses: [{ value: 'test@test.com' }],
+				photos: [{ url: 'test.com' }],
+			},
+		});
+
+		const user = await getUserProfile(mockAccessToken);
+
+		expect(user).toMatchObject({
+			name: 'test',
+			email: 'test@test.com',
+			photoURL: 'test.com',
+		});
+	});
+
+	it('should return error when access token is invalid', async () => {
+		const mockAccessToken = generateRandomString();
+		const mockErrorMessage = 'Request had invalid authentication credentials. ';
+
+		mockAxios.get.mockRejectedValue({
+			response: {
+				data: {
+					error: {
+						code: 400,
+						message: mockErrorMessage,
+					},
+				},
+			},
+		});
+
+		await expect(getUserProfile(mockAccessToken)).rejects.toThrow(
+			mockErrorMessage
+		);
 	});
 });
