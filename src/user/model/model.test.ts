@@ -36,11 +36,14 @@ describe('user/model', () => {
 				],
 			};
 
+			const { id, name, email, photo_url } = mockRows.rows[0];
+			const mockResult = { id, name, email, photoURL: photo_url };
+
 			pool.query.mockResolvedValueOnce(mockRows);
 
 			const user = await User.create('test', 'test@test.com', 'test.jpg');
 
-			expect(user).toEqual(mockRows.rows[0]);
+			expect(user).toEqual(mockResult);
 		});
 
 		it('should success create a user with name and email ', async () => {
@@ -55,11 +58,14 @@ describe('user/model', () => {
 				],
 			};
 
+      const { id, name, email, photo_url } = mockRows.rows[0];
+			const mockResult = { id, name, email, photoURL: photo_url };
+
 			pool.query.mockResolvedValueOnce(mockRows);
 
 			const user = await User.create('test', 'test@test.com');
 
-			expect(user).toEqual(mockRows.rows[0]);
+			expect(user).toEqual(mockResult);
 		});
 
 		it('should throw an error when create duplicate user', async () => {
@@ -89,11 +95,14 @@ describe('user/model', () => {
 				],
 			};
 
+      const { id, name, email, photo_url } = mockRows.rows[0];
+			const mockResult = { id, name, email, photoURL: photo_url };
+
 			pool.query.mockResolvedValueOnce(mockRows);
 
 			const user = await User.findByEmail('test@test.com');
 
-			expect(user).toEqual(mockRows.rows[0]);
+			expect(user).toEqual(mockResult);
 		});
 
 		it('should return null if email does not exists', async () => {

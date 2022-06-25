@@ -9,13 +9,13 @@ class User {
 	public id: number;
 	public name: string;
 	public email: string;
-	public photo_url: string | undefined;
+	public photoURL: string | undefined;
 
 	constructor(id: number, name: string, email: string, photoURL?: string) {
 		this.id = id;
 		this.name = name;
 		this.email = email;
-		this.photo_url = photoURL;
+		this.photoURL = photoURL;
 	}
 
 	static async create(
@@ -24,7 +24,7 @@ class User {
 		photoURL: string | null = null
 	) {
 		try {
-			const result: QueryResult<User> = await pool.query(
+			const result: QueryResult = await pool.query(
 				`INSERT INTO users (name, email, photo_url) VALUES ('${name}', '${email}', '${photoURL}') RETURNING *`
 			);
 			const user = result.rows[0];
@@ -62,7 +62,7 @@ class User {
 			email: this.email,
 		}; // Reference: https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
 
-		const secret = process.env.JWT_SECRET as string;
+    const secret = process.env.JWT_SECRET as string;
 
 		return jwt.sign(payload, secret);
 	}
