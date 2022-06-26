@@ -2,7 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import 'module-alias/register';
 
-import { userRouter } from './user/routes';
+import { userRouter } from './user/controller';
 
 const app = express();
 const port = process.env.PORT;

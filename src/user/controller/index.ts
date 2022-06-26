@@ -1,1 +1,1 @@
-export { default } from './controller'
+export { default as userRouter } from './controller';
