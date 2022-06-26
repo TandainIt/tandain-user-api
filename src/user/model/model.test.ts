@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 
 import TandainError from '@/utils/TandainError';
-import User from './model';
+import UserModel from './model';
 
 jest.mock('pg', () => {
 	const mPool = {
@@ -41,7 +41,7 @@ describe('user/model', () => {
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
-			const user = await User.create('test', 'test@test.com', 'test.jpg');
+			const user = await UserModel.create('test', 'test@test.com', 'test.jpg');
 
 			expect(user).toEqual(mockResult);
 		});
@@ -63,7 +63,7 @@ describe('user/model', () => {
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
-			const user = await User.create('test', 'test@test.com');
+			const user = await UserModel.create('test', 'test@test.com');
 
 			expect(user).toEqual(mockResult);
 		});
@@ -77,7 +77,7 @@ describe('user/model', () => {
 			pool.query.mockRejectedValue(posgresqlError);
 
 			await expect(
-				User.create('test', 'test@test.com', 'test.jpg')
+				UserModel.create('test', 'test@test.com', 'test.jpg')
 			).rejects.toThrowError(TandainError);
 		});
 	});
@@ -100,7 +100,7 @@ describe('user/model', () => {
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
-			const user = await User.findByEmail('test@test.com');
+			const user = await UserModel.findByEmail('test@test.com');
 
 			expect(user).toEqual(mockResult);
 		});
@@ -112,7 +112,7 @@ describe('user/model', () => {
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
-			const user = await User.findByEmail('test@test.com');
+			const user = await UserModel.findByEmail('test@test.com');
 
 			expect(user).toEqual(null);
 		});
@@ -125,23 +125,9 @@ describe('user/model', () => {
 
 			pool.query.mockRejectedValue(posgresqlError);
 
-			await expect(User.findByEmail('test@test.com')).rejects.toThrowError(
+			await expect(UserModel.findByEmail('test@test.com')).rejects.toThrowError(
 				TandainError
 			);
-		});
-	});
-
-	describe('generateJWT', () => {
-		it('should generate jwt token', () => {
-			const user = new User(1, 'test', 'test@gmail.com', 'test.com');
-
-			const idToken = user.generateJWT({
-				iss: process.env.HOST,
-				exp: 1,
-				aud: process.env.HOST,
-			});
-
-			expect(typeof idToken).toBe('string');
 		});
 	});
 });

@@ -1,18 +1,18 @@
 import { validateBody } from '@/middleware/validate';
 import { Router } from 'express';
 
-import UserService from '../service';
+import Auth from '../service';
 
 const router = Router();
 
 router.post(
-	'/user/login',
+	'/auth/login',
 	validateBody(['code', 'redirectUri']),
 	async (req, res) => {
 		try {
 			const { code, redirectUri } = req.body;
 
-			const { idToken, message } = await UserService.loginWithGoogle(
+			const { idToken, message } = await Auth.loginWithGoogle(
 				code,
 				redirectUri
 			);

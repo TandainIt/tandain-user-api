@@ -2,13 +2,13 @@ import { generateRandomString, parseCookies } from '@/utils/globals';
 import request from 'supertest';
 
 import { app, server } from '@/app';
-import UserService from '../service';
+import Auth from '../service';
 
-const mockLoginWithGoogle = jest.spyOn(UserService, 'loginWithGoogle');
+const mockLoginWithGoogle = jest.spyOn(Auth, 'loginWithGoogle');
 
 const BASE_URL = '/api/v1';
 
-describe('user/controller', () => {
+describe('auth/controller', () => {
 	afterEach(() => {
 		jest.clearAllMocks();
 	});
@@ -18,7 +18,7 @@ describe('user/controller', () => {
 		done();
 	});
 
-	describe('POST /user/login', () => {
+	describe('POST /auth/login', () => {
 		it('should send success message and set cookie correctly', async () => {
 			const mockLoginWithGoogleResult = {
 				idToken: generateRandomString(),
@@ -31,7 +31,7 @@ describe('user/controller', () => {
 			});
 
 			const res = await request(app)
-				.post(`${BASE_URL}/user/login`)
+				.post(`${BASE_URL}/auth/login`)
 				.send({
 					code: '4/0AX4XfWg6sVYpxftUy07gDC7G6kiNUwtd5a1nejak4QCg_bKifR6tD6B2hu_KjVv_mKszng',
 					redirectUri: 'http://localhost:3000/auth/google-oauth',
@@ -57,7 +57,7 @@ describe('user/controller', () => {
 			mockLoginWithGoogle.mockRejectedValue(mockError);
 
 			const res = await request(app)
-				.post(`${BASE_URL}/user/login`)
+				.post(`${BASE_URL}/auth/login`)
 				.send({
 					code: '4/0AX4XfWg6sVYpxftUy07gDC7G6kiNUwtd5a1nejak4QCg_bKifR6tD6B2hu_KjVv_mKszng',
 					redirectUri: 'http://localhost:3000/auth/google-oauth',

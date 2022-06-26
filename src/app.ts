@@ -2,7 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import 'module-alias/register';
 
-import { userRouter } from './user/controller';
+import { authRouter } from './auth/controller';
 
 const app = express();
 const port = process.env.PORT;
@@ -11,7 +11,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 // ROUTER
-app.use('/api/v1', userRouter);
+app.use('/api/v1', authRouter);
 
 const server = app.listen(port, () => {
 	console.log(`Server is running at port ${port}`);
