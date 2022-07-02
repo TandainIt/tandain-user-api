@@ -9,6 +9,7 @@ const port = process.env.PORT;
 
 app.use(cookieParser());
 app.use(express.json());
+app.set('trust proxy', true);
 
 // ROUTER
 app.use('/api/v1', authRouter);

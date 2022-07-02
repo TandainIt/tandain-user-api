@@ -1,4 +1,4 @@
-import { generateRandomString, parseCookies } from '@/utils/globals';
+import { generateRandomString, parseCookies } from '@/utils/utils';
 import request from 'supertest';
 
 import { app, server } from '@/app';
@@ -23,11 +23,13 @@ describe('auth/controller', () => {
 			const mockLoginWithGoogleResult = {
 				idToken: generateRandomString(),
 				message: 'Logged in successfully',
+				refreshToken: generateRandomString(64),
 			};
 
 			mockLoginWithGoogle.mockResolvedValue({
 				idToken: mockLoginWithGoogleResult.idToken,
 				message: mockLoginWithGoogleResult.message,
+				refreshToken: mockLoginWithGoogleResult.refreshToken,
 			});
 
 			const res = await request(app)

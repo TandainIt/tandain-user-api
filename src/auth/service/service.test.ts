@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 import Auth from './service';
+import AuthModel from '../model';
 import User from '@/user/service';
 import { server } from '@/app';
-import { generateRandomString } from '@/utils/globals';
+import { generateRandomString } from '@/utils/utils';
 import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 
 jest.mock('axios');
@@ -13,7 +14,12 @@ const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
 const getUserProfileMock = jest.spyOn(Auth as any, 'getUserProfile');
-const generateJWTMock = jest.spyOn(Auth as any, 'generateJWT');
+const generateIdTokenMock = jest.spyOn(Auth as any, 'generateIdToken');
+const generateRefreshTokenMock = jest.spyOn(
+	Auth as any,
+	'generateRefreshToken'
+);
+const insertOneAuthMock = jest.spyOn(AuthModel, 'insertOneAuth');
 
 const mockAuthCode = generateRandomString();
 const mockRedirectUri = 'http://localhost:3000/auth/google-oauth';
@@ -153,29 +159,45 @@ describe('auth/service', () => {
 		});
 	});
 
-  describe('generateJWT', () => {
+	describe('generateIdToken', () => {
 		it('should generate jwt token', () => {
 			const user = new User(1, 'test', 'test@gmail.com', 'test.com');
 
-			const idToken = Auth['generateJWT']({
+			const idToken = Auth['generateIdToken']({
 				iss: process.env.HOST,
 				exp: 1,
 				aud: process.env.HOST,
-        userId: user.id,
-        userName: user.name,
-        userEmail: user.email,
-        
+				userId: user.id,
+				userName: user.name,
+				userEmail: user.email,
 			});
 
 			expect(typeof idToken).toBe('string');
 		});
 	});
 
+	describe('generateRefreshToken', () => {
+		it('should success generate a new refresh token and expiry;', async () => {
+			const generateRefreshToken = Auth['generateRefreshToken'];
+
+			const { refreshToken, expiryDateMs } = await generateRefreshToken();
+
+			expect(typeof refreshToken).toEqual('string');
+			expect(refreshToken.length).toEqual(64);
+			expect(typeof expiryDateMs).toEqual('number');
+		});
+	});
+
 	describe('loginWithGoogle', () => {
-		it('should return idToken and success message with the new user email', async () => {
-			const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
+		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
+		const mockIdToken = generateRandomString();
+		const mockRefreshToken = {
+			refreshToken: generateRandomString(64),
+			expiryDateMs: Date.now() + 5259600000,
+		};
+
+		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
 			const { name, email, photoURL } = mockUser;
-			const mockIdToken = generateRandomString();
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -190,23 +212,28 @@ describe('auth/service', () => {
 
 			findByEmailUserMock.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
-			generateJWTMock.mockReturnValue(mockIdToken);
+			generateIdTokenMock.mockReturnValue(mockIdToken);
+			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
 				code: '4/0AX4XfWg6sVYpxftUy07gDC7G6kiNUwtd5a1nejak4QCg_bKifR6tD6B2hu_KjVv_mKszng',
 				redirectUri: 'http://localhost:3000/auth/google-oauth',
 			};
 
-			const result = await Auth.loginWithGoogle(body.code, body.redirectUri);
+			const result = await Auth.loginWithGoogle(
+				body.code,
+				body.redirectUri,
+				'127.0.0.1'
+			);
 
 			expect(result.idToken).toEqual(mockIdToken);
+			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 
 		it('should return idToken and success message with the existing user email', async () => {
-			const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
 			const { name, email, photoURL } = mockUser;
-			const mockIdToken = generateRandomString();
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -220,16 +247,23 @@ describe('auth/service', () => {
 			});
 
 			findByEmailUserMock.mockResolvedValue(mockUser);
-			generateJWTMock.mockReturnValue(mockIdToken);
+			generateIdTokenMock.mockReturnValue(mockIdToken);
+			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
 				code: '4/0AX4XfWg6sVYpxftUy07gDC7G6kiNUwtd5a1nejak4QCg_bKifR6tD6B2hu_KjVv_mKszng',
 				redirectUri: 'http://localhost:3000/auth/google-oauth',
 			};
 
-			const result = await Auth.loginWithGoogle(body.code, body.redirectUri);
+			const result = await Auth.loginWithGoogle(
+				body.code,
+				body.redirectUri,
+				'127.0.0.1'
+			);
 
 			expect(result.idToken).toEqual(mockIdToken);
+			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 
@@ -248,7 +282,7 @@ describe('auth/service', () => {
 			};
 
 			await expect(
-				Auth.loginWithGoogle(body.code, body.redirectUri)
+				Auth.loginWithGoogle(body.code, body.redirectUri, '127.0.0.1')
 			).rejects.toThrow(mockError.message);
 		});
 	});

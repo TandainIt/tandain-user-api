@@ -3,7 +3,7 @@ export interface GetTokenError {
 	error_description: string;
 }
 
-export interface GenerateJWTArgs {
+export interface GenerateIdTokenArgs {
 	iss?: string;
 	exp?: number | null;
 	aud?: string;

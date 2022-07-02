@@ -2,6 +2,7 @@ import { Auth as GoogleAuth, google } from 'googleapis';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 
+import AuthModel from '../model';
 import User from '@/user/service';
 import TandainError from '@/utils/TandainError';
 import {
@@ -9,7 +10,8 @@ import {
 	PARAM_CODE_INVALID,
 	PARAM_REDIRECT_URI_INVALID,
 } from '../errors';
-import { GenerateJWTArgs } from './service.types';
+import { GenerateIdTokenArgs } from './service.types';
+import { generateRandomCryptoString } from '@/utils/utils';
 
 class Auth {
 	private static async exchangeOAuthCode(code: string, redirectUri: string) {
@@ -44,12 +46,13 @@ class Auth {
 				},
 			};
 
-			const getTokenErrorName: keyof typeof errors = err.response?.data.error;
-			const error = errors[getTokenErrorName || 'exhange_token_error'];
+			const error: keyof typeof errors = err.response
+				? err.response.data.error
+				: 'exhange_token_error';
 
-			throw new TandainError(error.message, {
-				name: error.name,
-				code: error.code,
+			throw new TandainError(errors[error].message, {
+				name: errors[error].name,
+				code: errors[error].code,
 			});
 		}
 	}
@@ -85,14 +88,14 @@ class Auth {
 		}
 	}
 
-	private static generateJWT({
+	private static generateIdToken({
 		iss,
 		exp,
 		aud,
 		userId,
 		userName,
 		userEmail,
-	}: GenerateJWTArgs) {
+	}: GenerateIdTokenArgs) {
 		const payload = {
 			iss, // Issuer of the token
 			sub: userId, // Subject
@@ -107,7 +110,18 @@ class Auth {
 		return jwt.sign(payload, secret);
 	}
 
-	static async loginWithGoogle(code: string, redirectUri: string) {
+	private static async generateRefreshToken() {
+		const refreshToken = await generateRandomCryptoString(48);
+		const expiryDateMs = Date.now() + 5259600000; // NOTE: Expired in 2 Months
+
+		return { refreshToken, expiryDateMs };
+	}
+
+	static async loginWithGoogle(
+		code: string,
+		redirectUri: string,
+		clientIp: string
+	) {
 		try {
 			const { access_token, expiry_date } = await this.exchangeOAuthCode(
 				code,
@@ -123,7 +137,7 @@ class Auth {
 				user = await User.create(name, email, photoURL);
 			}
 
-			const idToken = this.generateJWT({
+			const idToken = this.generateIdToken({
 				iss: process.env.HOST,
 				exp: expiry_date,
 				aud: process.env.HOST,
@@ -132,7 +146,20 @@ class Auth {
 				userEmail: user.email,
 			});
 
-			return { idToken, message: 'Logged in successfully' };
+			const { refreshToken, expiryDateMs } = await this.generateRefreshToken();
+
+			await AuthModel.insertOneAuth(
+				refreshToken,
+				user.id,
+				expiryDateMs,
+				clientIp
+			);
+
+			return {
+				idToken,
+				refreshToken,
+				message: 'Logged in successfully',
+			};
 		} catch (err) {
 			throw new TandainError(err.message, {
 				name: err.name,

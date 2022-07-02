@@ -12,9 +12,10 @@ router.post(
 		try {
 			const { code, redirectUri } = req.body;
 
-			const { idToken, message } = await Auth.loginWithGoogle(
+			const { idToken, message, refreshToken } = await Auth.loginWithGoogle(
 				code,
-				redirectUri
+				redirectUri,
+				req.ip
 			);
 
 			res
@@ -22,7 +23,7 @@ router.post(
 					httpOnly: true,
 					secure: true,
 				})
-				.send({ message });
+				.send({ message, refresh_token: refreshToken });
 		} catch (err) {
 			res.status(err.code).json({ ...err, message: err.message });
 		}
