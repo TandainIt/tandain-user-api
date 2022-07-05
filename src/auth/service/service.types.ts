@@ -11,3 +11,9 @@ export interface GenerateIdTokenArgs {
 	userName: string;
 	userEmail: string;
 }
+
+export interface GenerateCredentialsArgs {
+  userId: number;
+	userName: string;
+	userEmail: string;
+}

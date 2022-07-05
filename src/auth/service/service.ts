@@ -10,10 +10,20 @@ import {
 	PARAM_CODE_INVALID,
 	PARAM_REDIRECT_URI_INVALID,
 } from '../errors';
-import { GenerateIdTokenArgs } from './service.types';
+import { GenerateCredentialsArgs, GenerateIdTokenArgs } from './service.types';
 import { generateRandomCryptoString } from '@/utils/utils';
 
 class Auth {
+	id: number;
+	refresh_token: string;
+	user_id: number;
+	created_by_ip: string;
+	replaced_by: string | null;
+	revoked_by_ip: string | null;
+	expiry_date: string;
+	created_at: string;
+	revoked_at: string | null;
+
 	private static async exchangeOAuthCode(code: string, redirectUri: string) {
 		try {
 			const oauth2Client: GoogleAuth.OAuth2Client = new google.auth.OAuth2(
@@ -117,6 +127,36 @@ class Auth {
 		return { refreshToken, expiryDateMs };
 	}
 
+	private static async generateCredentials({
+		userId,
+		userName,
+		userEmail,
+	}: GenerateCredentialsArgs) {
+		const idTokenExpMs = Date.now() + 3600000;
+
+		const idTokenPayload = {
+			iss: process.env.HOST, // Issuer of the token
+			sub: userId, // Subject
+			exp: idTokenExpMs, // Expiry date
+			aud: process.env.HOST, // Recipient of the token
+			name: userName,
+			email: userEmail,
+		}; // Reference: https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
+
+		const secret = process.env.JWT_SECRET as string;
+		const idToken = jwt.sign(idTokenPayload, secret);
+
+		const refreshToken = await generateRandomCryptoString(48);
+		const refreshTokenExpMs = Date.now() + 5259600000; // NOTE: Expired in 2 Months
+
+		return {
+			idToken,
+			idTokenExpMs,
+			refreshToken,
+			refreshTokenExpMs,
+		};
+	}
+
 	static async loginWithGoogle(
 		code: string,
 		redirectUri: string,
@@ -165,6 +205,75 @@ class Auth {
 				name: err.name,
 				code: err.code,
 				location: err.location,
+			});
+		}
+	}
+
+	static async refreshToken(oldRefreshToken: string, clientIp: string) {
+		try {
+			const oldAuth = await AuthModel.findOne({
+				refresh_token: oldRefreshToken,
+			});
+
+			if (!oldAuth) {
+				throw new TandainError(
+					'Required parameter "refresh_token" is invalid',
+					{ code: 400 }
+				);
+			}
+
+			const isAuthExpired = new Date(oldAuth.expiry_date) < new Date();
+
+			if (oldAuth.revoked_by_ip || isAuthExpired) {
+				throw new TandainError(
+					'Required parameter "refresh_token" is expired',
+					{ code: 400 }
+				);
+			}
+
+			const user = await User.findOne({ id: oldAuth.user_id });
+
+			if (!user) {
+				throw new TandainError('User is not found', { code: 400 });
+			}
+
+			const newCredentials = await this.generateCredentials({
+				userId: oldAuth.user_id,
+				userName: user.name,
+				userEmail: user.email,
+			});
+
+			await AuthModel.updateOne({
+				updates: {
+					revoked_by_ip: clientIp,
+					revoked_at: new Date().toISOString(),
+					replaced_by: newCredentials.refreshToken,
+				},
+				wheres: { refresh_token: oldRefreshToken },
+			});
+
+			await AuthModel.insertOneAuth(
+				newCredentials.refreshToken,
+				user.id,
+				newCredentials.refreshTokenExpMs,
+				clientIp
+			);
+
+			return {
+				idToken: newCredentials.idToken,
+				idTokenExpMs: newCredentials.idTokenExpMs,
+				refreshToken: newCredentials.refreshToken,
+				message: 'Refresh token successfully',
+			};
+		} catch (err) {
+			if (err.code === 500) {
+				throw new TandainError('Something went wrong', {
+					...err,
+				});
+			}
+
+			throw new TandainError(err.message, {
+				...err,
 			});
 		}
 	}

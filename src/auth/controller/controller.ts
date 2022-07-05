@@ -30,4 +30,31 @@ router.post(
 	}
 );
 
+router.post(
+	'/auth/refresh',
+	validateBody(['refresh_token']),
+	async (req, res) => {
+		try {
+			const oldRefreshToken = req.body.refresh_token;
+
+			const { idToken, refreshToken, idTokenExpMs, message } =
+				await Auth.refreshToken(oldRefreshToken, req.ip);
+
+			res
+				.cookie('id_token', idToken, {
+					httpOnly: true,
+					secure: true,
+				})
+				.send({
+					id_token: idToken,
+					expiry_date: idTokenExpMs,
+					refresh_token: refreshToken,
+					message,
+				});
+		} catch (err) {
+			res.status(err.code).json({ ...err, message: err.message });
+		}
+	}
+);
+
 export default router;

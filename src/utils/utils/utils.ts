@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+
 import TandainError from '../TandainError';
 
 export const generateRandomString = (length?: number): string => {
