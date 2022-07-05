@@ -4,6 +4,7 @@ import TandainError from '@/utils/TandainError';
 
 const mockCreate = jest.spyOn(UserModel, 'create');
 const mockFindByEmail = jest.spyOn(UserModel, 'findByEmail');
+const mockFindOne = jest.spyOn(UserModel, 'findOne');
 
 describe('user/service', () => {
 	afterEach(() => {
@@ -104,6 +105,68 @@ describe('user/service', () => {
 
 			await expect(User.findByEmail('test@test.com')).rejects.toThrow(
 				TandainError
+			);
+		});
+	});
+
+	describe('findOne', () => {
+		it('should return user by id', async () => {
+			const mockUser = {
+				id: 1,
+				name: 'test',
+				email: 'test@test.com',
+				photo_url: 'test.jpg',
+			};
+
+			mockFindOne.mockResolvedValue(mockUser);
+
+			const user = await User.findOne({ id: mockUser.id });
+
+			expect(user).toEqual({
+				id: 1,
+				name: 'test',
+				email: 'test@test.com',
+				photoURL: 'test.jpg',
+			});
+		});
+
+		it('should return user by email', async () => {
+			const mockUser = {
+				id: 1,
+				name: 'test',
+				email: 'test@test.com',
+				photo_url: 'test.jpg',
+			};
+
+			mockFindOne.mockResolvedValue(mockUser);
+
+			const user = await User.findOne({ email: mockUser.email });
+
+			expect(user).toEqual({
+				id: 1,
+				name: 'test',
+				email: 'test@test.com',
+				photoURL: 'test.jpg',
+			});
+		});
+
+		it('should return null if user is not exists', async () => {
+			mockFindOne.mockResolvedValue(null);
+
+			const user = await User.findOne({ id: 2 });
+
+			expect(user).toEqual(null);
+		});
+
+		it('should throw "Something went wrong" to handle unexpected Internal Error', async () => {
+			mockFindOne.mockRejectedValue({
+				code: 500,
+				message: 'Unexpected Internal Error',
+				location: 'user/findOne',
+			});
+
+			await expect(User.findOne({ id: 2 })).rejects.toThrowError(
+				'Something went wrong'
 			);
 		});
 	});

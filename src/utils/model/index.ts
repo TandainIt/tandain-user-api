@@ -1,0 +1,1 @@
+export { joinQuery } from './model'

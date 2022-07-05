@@ -11,6 +11,7 @@ jest.mock('axios');
 
 const createUserMock = jest.spyOn(User, 'create');
 const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
+const findOneUserMock = jest.spyOn(User, 'findOne');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
 const getUserProfileMock = jest.spyOn(Auth as any, 'getUserProfile');
@@ -19,7 +20,11 @@ const generateRefreshTokenMock = jest.spyOn(
 	Auth as any,
 	'generateRefreshToken'
 );
+const generateCredentialsMock = jest.spyOn(Auth as any, 'generateCredentials');
+
+const findOneAuthMock = jest.spyOn(AuthModel, 'findOne');
 const insertOneAuthMock = jest.spyOn(AuthModel, 'insertOneAuth');
+const updateOneAuthMock = jest.spyOn(AuthModel, 'updateOne');
 
 const mockAuthCode = generateRandomString();
 const mockRedirectUri = 'http://localhost:3000/auth/google-oauth';
@@ -188,6 +193,27 @@ describe('auth/service', () => {
 		});
 	});
 
+	describe('generateCredentials', () => {
+		it('should success generate idToken, refreshToken, and their expiry date', async () => {
+			const generateCredentials = Auth['generateCredentials'];
+
+			const credentials = await generateCredentials({
+				userId: 1,
+				userName: 'Test',
+				userEmail: 'test@test.com',
+			});
+
+			expect(credentials).toMatchObject({
+				idToken: expect.any(String),
+				idTokenExpMs: expect.any(Number),
+				refreshToken: expect.any(String),
+				refreshTokenExpMs: expect.any(Number),
+			});
+
+			expect(credentials.refreshToken.length).toEqual(64);
+		});
+	});
+
 	describe('loginWithGoogle', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
 		const mockIdToken = generateRandomString();
@@ -284,6 +310,198 @@ describe('auth/service', () => {
 			await expect(
 				Auth.loginWithGoogle(body.code, body.redirectUri, '127.0.0.1')
 			).rejects.toThrow(mockError.message);
+		});
+	});
+
+	describe('refreshToken', () => {
+		it('should return a new idToken, a expires date, a new refreshToken, and a success message', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockNewRefreshToken = generateRandomString(64);
+			const mockNewIdToken = generateRandomString(128);
+			const mockClientIp = '127.0.0.1';
+
+			const mockOldAuth = {
+				id: 1,
+				refresh_token: mockOldRefreshToken,
+				user_id: 15,
+				created_by_ip: mockClientIp,
+				replaced_by: null,
+				revoked_by_ip: null,
+				expiry_date: new Date(Date.now() + 1800000).toISOString(),
+				created_at: new Date(Date.now() + 2700000).toISOString(),
+				revoked_at: null,
+			};
+
+			const mockUser = {
+				id: 15,
+				name: 'test',
+				email: 'test@test.com',
+				photoURL: 'test.com',
+			};
+
+			const mockCredentials = {
+				idToken: mockNewIdToken,
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: mockNewRefreshToken,
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
+
+			findOneAuthMock.mockResolvedValue(mockOldAuth);
+			findOneUserMock.mockResolvedValue(mockUser);
+			generateCredentialsMock.mockResolvedValue(mockCredentials);
+			updateOneAuthMock.mockResolvedValue({
+				...mockOldAuth,
+				replaced_by: generateRandomString(64),
+				revoked_by_ip: mockClientIp,
+				revoked_at: new Date().toISOString(),
+			});
+			insertOneAuthMock.mockResolvedValue({
+				...mockOldAuth,
+				id: 2,
+				refresh_token: generateRandomString(64),
+				created_at: new Date().toISOString(),
+			});
+
+			const result = await Auth.refreshToken(mockOldRefreshToken, mockClientIp);
+
+			expect(result).toMatchObject({
+				idToken: mockNewIdToken,
+				idTokenExpMs: expect.any(Number),
+				refreshToken: mockNewRefreshToken,
+				message: 'Refresh token successfully',
+			});
+		});
+
+		it('should throw "Required parameter refresh_token is invalid" if refresh_token is not exists', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockClientIp = '127.0.0.1';
+
+			findOneAuthMock.mockResolvedValue(null);
+
+			await expect(
+				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
+			).rejects.toThrow('Required parameter "refresh_token" is invalid');
+		});
+
+		it('should throw "Required parameter refresh_token is expired" if refresh_token has been revoked', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockClientIp = '127.0.0.1';
+
+			const mockOldAuth = {
+				id: 1,
+				refresh_token: mockOldRefreshToken,
+				user_id: 15,
+				created_by_ip: mockClientIp,
+				replaced_by: null,
+				revoked_by_ip: mockClientIp,
+				expiry_date: new Date(Date.now() + 1800000).toISOString(),
+				created_at: new Date(Date.now() + 2700000).toISOString(),
+				revoked_at: null,
+			};
+
+			findOneAuthMock.mockResolvedValue(mockOldAuth);
+
+			await expect(
+				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
+			).rejects.toThrow('Required parameter "refresh_token" is expired');
+		});
+
+		it('should throw "Required parameter refresh_token is expired" if refresh_token is expired', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockClientIp = '127.0.0.1';
+
+			const mockOldAuth = {
+				id: 1,
+				refresh_token: mockOldRefreshToken,
+				user_id: 15,
+				created_by_ip: mockClientIp,
+				replaced_by: null,
+				revoked_by_ip: null,
+				expiry_date: new Date(Date.now() - 600000).toISOString(),
+				created_at: new Date(Date.now() - 2700000).toISOString(),
+				revoked_at: null,
+			};
+
+			findOneAuthMock.mockResolvedValue(mockOldAuth);
+
+			await expect(
+				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
+			).rejects.toThrow('Required parameter "refresh_token" is expired');
+		});
+
+		it('should throw "User is not found" if user_id is invalid', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockClientIp = '127.0.0.1';
+
+			const mockOldAuth = {
+				id: 1,
+				refresh_token: mockOldRefreshToken,
+				user_id: 15,
+				created_by_ip: mockClientIp,
+				replaced_by: null,
+				revoked_by_ip: null,
+				expiry_date: new Date(Date.now() + 1800000).toISOString(),
+				created_at: new Date(Date.now() + 2700000).toISOString(),
+				revoked_at: null,
+			};
+
+			const mockUser = {
+				id: 15,
+				name: 'test',
+				email: 'test@test.com',
+				photoURL: 'test.com',
+			};
+
+			findOneAuthMock.mockResolvedValue(mockOldAuth);
+			findOneUserMock.mockResolvedValue(null);
+
+			await expect(
+				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
+			).rejects.toThrow('User is not found');
+		});
+
+		it('should throw "Something went wrong" if user is already not exists', async () => {
+			const mockOldRefreshToken = generateRandomString(64);
+			const mockClientIp = '127.0.0.1';
+
+			const mockOldAuth = {
+				id: 1,
+				refresh_token: mockOldRefreshToken,
+				user_id: 15,
+				created_by_ip: mockClientIp,
+				replaced_by: null,
+				revoked_by_ip: null,
+				expiry_date: new Date(Date.now() + 1800000).toISOString(),
+				created_at: new Date(Date.now() + 2700000).toISOString(),
+				revoked_at: null,
+			};
+
+			const mockUser = {
+				id: 15,
+				name: 'test',
+				email: 'test@test.com',
+				photoURL: 'test.com',
+			};
+
+			const mockCredentials = {
+				idToken: generateRandomString(128),
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: generateRandomString(64),
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
+
+			findOneAuthMock.mockResolvedValue(mockOldAuth);
+			findOneUserMock.mockResolvedValue(mockUser);
+			generateCredentialsMock.mockResolvedValue(mockCredentials);
+			updateOneAuthMock.mockRejectedValue({
+        code: 500,
+        message: 'insert or update on table "auth" violates foreign key constraint "fk_user"',
+        location: 'auth/updateOne'
+			});
+
+      await expect(
+				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
+			).rejects.toThrow('Something went wrong');
 		});
 	});
 });
