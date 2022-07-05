@@ -41,6 +41,22 @@ class User {
 			throw new TandainError(err.message, { name: err.name, code: err.code });
 		}
 	}
+
+	static async findOne(wheres: any) {
+		try {
+			const user = await UserModel.findOne(wheres);
+
+			if (!user) {
+				return null;
+			}
+
+			return new User(user.id, user.name, user.email, user.photo_url);
+		} catch (err) {
+			throw new TandainError('Something went wrong', {
+				...err,
+			});
+		}
+	}
 }
 
 export default User;

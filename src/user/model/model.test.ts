@@ -130,4 +130,75 @@ describe('user/model', () => {
 			);
 		});
 	});
+
+  describe('findOne', () => {
+		it('should return user by id', async () => {
+      const mockId = 1
+			const mockRows = {
+				rows: [
+					{
+						id: mockId,
+						name: 'test',
+						email: 'test@test.com',
+						photo_url: 'test.jpg',
+					},
+				],
+			};
+
+			const mockResult = mockRows.rows[0];
+
+			pool.query.mockResolvedValue(mockRows);
+
+			const user = await UserModel.findOne({ id: mockId });
+
+			expect(user).toEqual(mockResult);
+		});
+
+		it('should return user by email', async () => {
+			const mockEmail = 'test@test.com';
+			const mockRows = {
+				rows: [
+					{
+						id: 1,
+						name: 'test',
+						email: mockEmail,
+						photo_url: 'test.jpg',
+					},
+				],
+			};
+
+			const mockResult = mockRows.rows[0];
+
+			pool.query.mockResolvedValue(mockRows);
+
+			const user = await UserModel.findOne({ email: mockEmail });
+
+			expect(user).toEqual(mockResult);
+		});
+
+		it('should return null if user is not exists', async () => {
+			const mockRows = {
+				rows: [],
+			};
+
+			pool.query.mockResolvedValue(mockRows);
+
+			const user = await UserModel.findOne({ id: 2 });
+
+			expect(user).toEqual(null);
+		});
+
+		it('should throw an error when something went wrong', async () => {
+			const posgresqlError = {
+				name: 'system_error',
+				code: '58000',
+			};
+
+			pool.query.mockRejectedValue(posgresqlError);
+
+			await expect(UserModel.findOne({ id: 2 })).rejects.toThrowError(
+				TandainError
+			);
+		});
+	});
 });
