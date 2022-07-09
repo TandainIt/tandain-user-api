@@ -10,7 +10,11 @@ import {
 	PARAM_CODE_INVALID,
 	PARAM_REDIRECT_URI_INVALID,
 } from '../errors';
-import { GenerateCredentialsArgs, GenerateIdTokenArgs } from './service.types';
+import {
+	AuthJwtPayload,
+	GenerateCredentialsArgs,
+	GenerateIdTokenArgs,
+} from './service.types';
 import { generateRandomCryptoString } from '@/utils/utils';
 
 class Auth {
@@ -275,6 +279,27 @@ class Auth {
 			throw new TandainError(err.message, {
 				...err,
 			});
+		}
+	}
+
+	static verify(idToken: string) {
+		try {
+			const secret = process.env.JWT_SECRET as string;
+
+			const { sub, name, email } = jwt.verify(
+				idToken,
+				secret
+			) as unknown as AuthJwtPayload;
+
+			const user = {
+				id: sub,
+				name: name,
+				email: email,
+			};
+
+			return user;
+		} catch (err) {
+			throw new TandainError('Fail to verify jwt token', { code: 401 });
 		}
 	}
 }

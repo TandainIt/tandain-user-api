@@ -1,4 +1,5 @@
 import axios from 'axios';
+import jwt, { JsonWebTokenError } from 'jsonwebtoken';
 
 import Auth from './service';
 import AuthModel from '../model';
@@ -6,6 +7,7 @@ import User from '@/user/service';
 import { server } from '@/app';
 import { generateRandomString } from '@/utils/utils';
 import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
+import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
 
@@ -28,6 +30,8 @@ const updateOneAuthMock = jest.spyOn(AuthModel, 'updateOne');
 
 const mockAuthCode = generateRandomString();
 const mockRedirectUri = 'http://localhost:3000/auth/google-oauth';
+
+const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
 jest.mock('googleapis', () => {
 	const mockGetTokenSuccess = {
@@ -494,14 +498,45 @@ describe('auth/service', () => {
 			findOneUserMock.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			updateOneAuthMock.mockRejectedValue({
-        code: 500,
-        message: 'insert or update on table "auth" violates foreign key constraint "fk_user"',
-        location: 'auth/updateOne'
+				code: 500,
+				message:
+					'insert or update on table "auth" violates foreign key constraint "fk_user"',
+				location: 'auth/updateOne',
 			});
 
-      await expect(
+			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
 			).rejects.toThrow('Something went wrong');
+		});
+	});
+
+	describe('verify', () => {
+		it('should successfully verify idToken and return user', () => {
+			const mockJwtReturnValue = {
+				sub: generateRandomString(),
+				name: 'test',
+				email: 'test@test.com',
+			};
+			const { sub, name, email } = mockJwtReturnValue;
+			mockJwtVerify.mockImplementation(() => mockJwtReturnValue);
+
+			const mockIdToken = generateRandomString(128);
+
+			const result = Auth.verify(mockIdToken);
+
+			expect(result).toEqual({ id: sub, name, email });
+		});
+
+		it('should return "Fail to verify jwt token" error if jwt fail to verify idToken', () => {
+			mockJwtVerify.mockImplementation(() => {
+				throw new JsonWebTokenError('jwt malformed');
+			});
+
+			const mockIdToken = generateRandomString(128);
+
+			expect(() => Auth.verify(mockIdToken)).toThrowError(
+				new TandainError('Fail to verify jwt token')
+			);
 		});
 	});
 });

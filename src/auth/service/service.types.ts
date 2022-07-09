@@ -1,7 +1,4 @@
-export interface GetTokenError {
-	error: 'invalid_grant' | 'invalid_request';
-	error_description: string;
-}
+import { Request } from "express";
 
 export interface GenerateIdTokenArgs {
 	iss?: string;
@@ -10,6 +7,30 @@ export interface GenerateIdTokenArgs {
 	userId: number;
 	userName: string;
 	userEmail: string;
+}
+
+export interface JWTPayload {
+  iss?: string;
+  sub: number;
+  exp?: number | null;
+  aud?: string;
+  name: string;
+  email: string;
+} // TODO: Refactor with merge it with GenerateIdTokenArgs
+
+export interface UserJWTPayload extends Pick<JWTPayload, 'name' | 'email'>  {
+  id: number;
+}
+
+export type AuthJwtPayload = UserJWTPayload & JWTPayload
+
+export interface AuthenticatedRequest extends Request {
+  user?: UserJWTPayload
+}
+
+export interface GetTokenError {
+	error: 'invalid_grant' | 'invalid_request';
+	error_description: string;
 }
 
 export interface GenerateCredentialsArgs {
