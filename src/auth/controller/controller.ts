@@ -21,7 +21,7 @@ router.post(
 			res
 				.cookie('id_token', idToken, {
 					httpOnly: true,
-					secure: true,
+					secure: process.env.NODE_ENV === 'production',
 				})
 				.send({ message, refresh_token: refreshToken });
 		} catch (err) {
@@ -43,7 +43,7 @@ router.post(
 			res
 				.cookie('id_token', idToken, {
 					httpOnly: true,
-					secure: true,
+					secure: process.env.NODE_ENV === 'production',
 				})
 				.send({
 					id_token: idToken,
