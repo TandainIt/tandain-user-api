@@ -299,7 +299,33 @@ class Auth {
 
 			return user;
 		} catch (err) {
+			if (err.name === 'TokenExpiredError') {
+				throw new TandainError('Authentication is expired', { code: 401 });
+			}
+
 			throw new TandainError('Fail to verify jwt token', { code: 401 });
+		}
+	}
+
+	static async revoke(clientIp: string, userId: number) {
+		try {
+			const auths = await AuthModel.updateMany({
+				updates: {
+					revoked_by_ip: clientIp,
+					revoked_at: new Date().toISOString(),
+				},
+				wheres: {
+					created_by_ip: clientIp,
+					user_id: userId,
+					revoked_at: null,
+				},
+			});
+
+			return auths;
+		} catch (err) {
+			throw new TandainError('Something went wrong', {
+				...err,
+			});
 		}
 	}
 }

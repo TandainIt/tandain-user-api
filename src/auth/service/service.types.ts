@@ -1,5 +1,3 @@
-import { Request } from "express";
-
 export interface GenerateIdTokenArgs {
 	iss?: string;
 	exp?: number | null;
@@ -23,10 +21,6 @@ export interface UserJWTPayload extends Pick<JWTPayload, 'name' | 'email'>  {
 }
 
 export type AuthJwtPayload = UserJWTPayload & JWTPayload
-
-export interface AuthenticatedRequest extends Request {
-  user?: UserJWTPayload
-}
 
 export interface GetTokenError {
 	error: 'invalid_grant' | 'invalid_request';

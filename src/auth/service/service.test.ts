@@ -1,5 +1,5 @@
 import axios from 'axios';
-import jwt, { JsonWebTokenError } from 'jsonwebtoken';
+import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
 import Auth from './service';
 import AuthModel from '../model';
@@ -10,6 +10,8 @@ import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
+
+const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
 const createUserMock = jest.spyOn(User, 'create');
 const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
@@ -26,12 +28,11 @@ const generateCredentialsMock = jest.spyOn(Auth as any, 'generateCredentials');
 
 const findOneAuthMock = jest.spyOn(AuthModel, 'findOne');
 const insertOneAuthMock = jest.spyOn(AuthModel, 'insertOneAuth');
+const updateManyAuthMock = jest.spyOn(AuthModel, 'updateMany');
 const updateOneAuthMock = jest.spyOn(AuthModel, 'updateOne');
 
 const mockAuthCode = generateRandomString();
 const mockRedirectUri = 'http://localhost:3000/auth/google-oauth';
-
-const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
 jest.mock('googleapis', () => {
 	const mockGetTokenSuccess = {
@@ -527,6 +528,18 @@ describe('auth/service', () => {
 			expect(result).toEqual({ id: sub, name, email });
 		});
 
+		it('should return "Authentication is expired"', () => {
+			mockJwtVerify.mockImplementation(() => {
+				throw new TokenExpiredError('jwt expired', new Date());
+			});
+
+			const mockIdToken = generateRandomString(128);
+
+			expect(() => Auth.verify(mockIdToken)).toThrowError(
+				new TandainError('Authentication is expired')
+			);
+		});
+
 		it('should return "Fail to verify jwt token" error if jwt fail to verify idToken', () => {
 			mockJwtVerify.mockImplementation(() => {
 				throw new JsonWebTokenError('jwt malformed');
@@ -536,6 +549,73 @@ describe('auth/service', () => {
 
 			expect(() => Auth.verify(mockIdToken)).toThrowError(
 				new TandainError('Fail to verify jwt token')
+			);
+		});
+	});
+
+	describe('revoke', () => {
+		it('should return revoked authentication', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			const updatesMock = {
+				revoked_by_ip: clientIp,
+				revoked_at: new Date().toISOString(),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: 1,
+					refresh_token: generateRandomString(128),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: null,
+					revoked_by_ip: updatesMock.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: updatesMock.revoked_at,
+				},
+				{
+					id: 2,
+					refresh_token: generateRandomString(128),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: null,
+					revoked_by_ip: updatesMock.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: updatesMock.revoked_at,
+				},
+			];
+
+			updateManyAuthMock.mockResolvedValue(updateManyReturn);
+
+			const result = await Auth.revoke(clientIp, userId);
+
+			expect(result).toEqual(updateManyReturn);
+		});
+
+		it('should return empty array if ip of the client is not found', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			updateManyAuthMock.mockResolvedValue([]);
+
+			const result = await Auth.revoke(clientIp, userId);
+
+			expect(result).toEqual([]);
+		});
+
+		it('should throw "Something went wrong" if there is error in updating authentication', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			const updateManyRejected = {
+				code: 500,
+				message: 'Something went wrong',
+			};
+
+			updateManyAuthMock.mockRejectedValue(updateManyRejected);
+
+			await expect(Auth.revoke(clientIp, userId)).rejects.toThrowError(
+				new TandainError(updateManyRejected.message)
 			);
 		});
 	});

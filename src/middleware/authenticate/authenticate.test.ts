@@ -3,7 +3,6 @@ import { NextFunction, Request, Response } from 'express';
 
 import Auth from '@/auth/service';
 import authenticate from './authenticate';
-import { AuthenticatedRequest } from '@/auth/service/service.types';
 import TandainError from '@/utils/TandainError';
 
 const verifyMock = jest.spyOn(Auth, 'verify');
@@ -43,13 +42,17 @@ describe('authenticate', () => {
 			nextFunction
 		);
 
-		const { user } = mockRequest as AuthenticatedRequest;
+		const { user } = mockRequest;
 
 		expect(nextFunction).toHaveBeenCalled();
 		expect(user).toEqual(mockUser);
 	});
 
-	it('should send "Unauthenticated" message if id_token is not provided', () => {
+	it('should send "id_token is not exist" message if id_token is not provided', () => {
+		mockRequest = {
+			cookies: {},
+		};
+
 		authenticate(
 			mockRequest as Request,
 			mockResponse as Response,
@@ -58,24 +61,36 @@ describe('authenticate', () => {
 
 		expect(mockResponse.status).toHaveBeenCalledWith(401);
 		expect(mockResponse.json).toHaveBeenCalledWith({
-			message: 'Unauthorized',
+			code: 401,
+			location: 'authenticate',
+			name: 'Unauthorized',
+			message: 'id_token is not exist',
 		});
 	});
 
 	it('should send "Unauthenticated" message if user in id_token is fail to verify', () => {
-    authenticate(
+		mockRequest = {
+			cookies: {
+				id_token: generateRandomString(128),
+			},
+		};
+
+		verifyMock.mockImplementation(() => {
+			throw new TandainError('Fail to verify jwt token', { code: 401 });
+		});
+
+		authenticate(
 			mockRequest as Request,
 			mockResponse as Response,
 			nextFunction
 		);
 
-    verifyMock.mockImplementation(() => {
-      throw new TandainError('Fail to verify jwt token', { code: 401 });
-    });
-
 		expect(mockResponse.status).toHaveBeenCalledWith(401);
 		expect(mockResponse.json).toHaveBeenCalledWith({
-			message: 'Unauthorized',
+			code: 401,
+			location: 'authenticate',
+			message: 'Fail to verify jwt token',
+			name: 'Unauthorized',
 		});
-  })
+	});
 });

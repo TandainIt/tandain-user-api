@@ -4,7 +4,11 @@ import pool from '@/postgresql/postgresql';
 import TandainError from '@/utils/TandainError';
 import Auth from '../service';
 import { joinQuery } from '@/utils/model';
-import { updateOneAuthParams, whereAuthQueries } from './model.types';
+import {
+	updateManyAuthParams,
+	updateOneAuthParams,
+	whereAuthQueries,
+} from './model.types';
 
 class AuthModel {
 	static async insertOneAuth(
@@ -40,7 +44,7 @@ class AuthModel {
 		}
 	}
 
-	static async updateOne({ updates, wheres }: updateOneAuthParams) {
+	static async updateMany({ updates, wheres }: updateManyAuthParams) {
 		const updateQuery = joinQuery(updates);
 		const whereQuery = joinQuery(wheres, ' AND ');
 
@@ -49,7 +53,17 @@ class AuthModel {
 				`UPDATE auth SET ${updateQuery} WHERE ${whereQuery} RETURNING *`
 			);
 
-			const auth = result.rows[result.rows.length - 1] || null;
+			return result.rows;
+		} catch (err) {
+			throw new TandainError(err.message, { location: 'auth/updateMany' });
+		}
+	}
+
+	static async updateOne({ updates, wheres }: updateOneAuthParams) {
+		try {
+			const result = await this.updateMany({ updates, wheres });
+
+			const auth = result[0] || null;
 
 			return auth;
 		} catch (err) {

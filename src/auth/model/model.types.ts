@@ -9,7 +9,11 @@ export type AuthUniqueColumn = {
 
 export type whereAuthQueries = AtLeastOne<Auth, AuthUniqueColumn>;
 
-export interface updateOneAuthParams {
+export interface updateManyAuthParams {
 	updates: Partial<Auth>;
+	wheres: Partial<Auth>;
+}
+
+export interface updateOneAuthParams extends updateManyAuthParams {
 	wheres: whereAuthQueries;
 }
