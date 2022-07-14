@@ -1,4 +1,5 @@
 import axios from 'axios';
+import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
 import Auth from './service';
 import AuthModel from '../model';
@@ -6,8 +7,11 @@ import User from '@/user/service';
 import { server } from '@/app';
 import { generateRandomString } from '@/utils/utils';
 import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
+import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
+
+const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
 const createUserMock = jest.spyOn(User, 'create');
 const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
@@ -15,15 +19,11 @@ const findOneUserMock = jest.spyOn(User, 'findOne');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
 const getUserProfileMock = jest.spyOn(Auth as any, 'getUserProfile');
-const generateIdTokenMock = jest.spyOn(Auth as any, 'generateIdToken');
-const generateRefreshTokenMock = jest.spyOn(
-	Auth as any,
-	'generateRefreshToken'
-);
 const generateCredentialsMock = jest.spyOn(Auth as any, 'generateCredentials');
 
 const findOneAuthMock = jest.spyOn(AuthModel, 'findOne');
 const insertOneAuthMock = jest.spyOn(AuthModel, 'insertOneAuth');
+const updateManyAuthMock = jest.spyOn(AuthModel, 'updateMany');
 const updateOneAuthMock = jest.spyOn(AuthModel, 'updateOne');
 
 const mockAuthCode = generateRandomString();
@@ -164,43 +164,14 @@ describe('auth/service', () => {
 		});
 	});
 
-	describe('generateIdToken', () => {
-		it('should generate jwt token', () => {
-			const user = new User(1, 'test', 'test@gmail.com', 'test.com');
-
-			const idToken = Auth['generateIdToken']({
-				iss: process.env.HOST,
-				exp: 1,
-				aud: process.env.HOST,
-				userId: user.id,
-				userName: user.name,
-				userEmail: user.email,
-			});
-
-			expect(typeof idToken).toBe('string');
-		});
-	});
-
-	describe('generateRefreshToken', () => {
-		it('should success generate a new refresh token and expiry;', async () => {
-			const generateRefreshToken = Auth['generateRefreshToken'];
-
-			const { refreshToken, expiryDateMs } = await generateRefreshToken();
-
-			expect(typeof refreshToken).toEqual('string');
-			expect(refreshToken.length).toEqual(64);
-			expect(typeof expiryDateMs).toEqual('number');
-		});
-	});
-
 	describe('generateCredentials', () => {
 		it('should success generate idToken, refreshToken, and their expiry date', async () => {
 			const generateCredentials = Auth['generateCredentials'];
 
 			const credentials = await generateCredentials({
-				userId: 1,
-				userName: 'Test',
-				userEmail: 'test@test.com',
+				id: 1,
+				name: 'Test',
+				email: 'test@test.com',
 			});
 
 			expect(credentials).toMatchObject({
@@ -216,14 +187,16 @@ describe('auth/service', () => {
 
 	describe('loginWithGoogle', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
-		const mockIdToken = generateRandomString();
-		const mockRefreshToken = {
-			refreshToken: generateRandomString(64),
-			expiryDateMs: Date.now() + 5259600000,
-		};
 
 		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
 			const { name, email, photoURL } = mockUser;
+
+      const mockCredentials = {
+				idToken: generateRandomString(128),
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: generateRandomString(64),
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -238,8 +211,7 @@ describe('auth/service', () => {
 
 			findByEmailUserMock.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
-			generateIdTokenMock.mockReturnValue(mockIdToken);
-			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+      generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -253,13 +225,20 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockIdToken);
-			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
+			expect(result.idToken).toEqual(mockCredentials.idToken);
+			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 
 		it('should return idToken and success message with the existing user email', async () => {
 			const { name, email, photoURL } = mockUser;
+
+      const mockCredentials = {
+				idToken: generateRandomString(128),
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: generateRandomString(64),
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -273,8 +252,7 @@ describe('auth/service', () => {
 			});
 
 			findByEmailUserMock.mockResolvedValue(mockUser);
-			generateIdTokenMock.mockReturnValue(mockIdToken);
-			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+      generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -288,8 +266,8 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockIdToken);
-			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
+			expect(result.idToken).toEqual(mockCredentials.idToken);
+			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 
@@ -494,14 +472,124 @@ describe('auth/service', () => {
 			findOneUserMock.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			updateOneAuthMock.mockRejectedValue({
-        code: 500,
-        message: 'insert or update on table "auth" violates foreign key constraint "fk_user"',
-        location: 'auth/updateOne'
+				code: 500,
+				message:
+					'insert or update on table "auth" violates foreign key constraint "fk_user"',
+				location: 'auth/updateOne',
 			});
 
-      await expect(
+			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
 			).rejects.toThrow('Something went wrong');
+		});
+	});
+
+	describe('verify', () => {
+		it('should successfully verify idToken and return user', () => {
+			const mockJwtReturnValue = {
+				sub: generateRandomString(),
+				name: 'test',
+				email: 'test@test.com',
+			};
+			const { sub, name, email } = mockJwtReturnValue;
+			mockJwtVerify.mockImplementation(() => mockJwtReturnValue);
+
+			const mockIdToken = generateRandomString(128);
+
+			const result = Auth.verify(mockIdToken);
+
+			expect(result).toEqual({ id: sub, name, email });
+		});
+
+		it('should return "Authentication is expired"', () => {
+			mockJwtVerify.mockImplementation(() => {
+				throw new TokenExpiredError('jwt expired', new Date());
+			});
+
+			const mockIdToken = generateRandomString(128);
+
+			expect(() => Auth.verify(mockIdToken)).toThrowError(
+				new TandainError('Authentication is expired')
+			);
+		});
+
+		it('should return "Fail to verify jwt token" error if jwt fail to verify idToken', () => {
+			mockJwtVerify.mockImplementation(() => {
+				throw new JsonWebTokenError('jwt malformed');
+			});
+
+			const mockIdToken = generateRandomString(128);
+
+			expect(() => Auth.verify(mockIdToken)).toThrowError(
+				new TandainError('Fail to verify jwt token')
+			);
+		});
+	});
+
+	describe('revoke', () => {
+		it('should return revoked authentication', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			const updatesMock = {
+				revoked_by_ip: clientIp,
+				revoked_at: new Date().toISOString(),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: 1,
+					refresh_token: generateRandomString(128),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: null,
+					revoked_by_ip: updatesMock.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: updatesMock.revoked_at,
+				},
+				{
+					id: 2,
+					refresh_token: generateRandomString(128),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: null,
+					revoked_by_ip: updatesMock.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: updatesMock.revoked_at,
+				},
+			];
+
+			updateManyAuthMock.mockResolvedValue(updateManyReturn);
+
+			const result = await Auth.revoke(clientIp, userId);
+
+			expect(result).toEqual(updateManyReturn);
+		});
+
+		it('should return empty array if ip of the client is not found', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			updateManyAuthMock.mockResolvedValue([]);
+
+			const result = await Auth.revoke(clientIp, userId);
+
+			expect(result).toEqual([]);
+		});
+
+		it('should throw "Something went wrong" if there is error in updating authentication', async () => {
+			const clientIp = '127.0.0.1';
+			const userId = 1;
+			const updateManyRejected = {
+				code: 500,
+				message: 'Something went wrong',
+			};
+
+			updateManyAuthMock.mockRejectedValue(updateManyRejected);
+
+			await expect(Auth.revoke(clientIp, userId)).rejects.toThrowError(
+				new TandainError(updateManyRejected.message)
+			);
 		});
 	});
 });

@@ -1,3 +1,4 @@
+import authenticate from '@/middleware/authenticate';
 import { validateBody } from '@/middleware/validate';
 import { Router } from 'express';
 
@@ -21,7 +22,7 @@ router.post(
 			res
 				.cookie('id_token', idToken, {
 					httpOnly: true,
-					secure: true,
+					secure: process.env.NODE_ENV === 'production',
 				})
 				.send({ message, refresh_token: refreshToken });
 		} catch (err) {
@@ -43,7 +44,7 @@ router.post(
 			res
 				.cookie('id_token', idToken, {
 					httpOnly: true,
-					secure: true,
+					secure: process.env.NODE_ENV === 'production',
 				})
 				.send({
 					id_token: idToken,
@@ -56,5 +57,21 @@ router.post(
 		}
 	}
 );
+
+router.post('/auth/logout', authenticate, async (req, res) => {
+  try {
+    await Auth.revoke(req.ip, req.user.id)
+
+    res.clearCookie('id_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
+  
+    res.redirect('/');
+
+  } catch (err) {
+    res.status(err.code).json({ ...err, message: err.message });
+  }
+});
 
 export default router;

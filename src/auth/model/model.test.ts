@@ -1,11 +1,14 @@
 import { Pool } from 'pg';
 
+import Auth from '@/auth/service';
 import AuthModel from './model';
 import {
 	generateRandomCryptoString,
 	generateRandomString,
 } from '@/utils/utils';
 import TandainError from '@/utils/TandainError';
+
+const updateManyMock = jest.spyOn(AuthModel, 'updateMany');
 
 jest.mock('pg', () => {
 	const mPool = {
@@ -211,43 +214,8 @@ describe('auth/model', () => {
 		});
 	});
 
-	describe('updateOne', () => {
-		it('should return new auth with id in where clause', async () => {
-			const mockId = 1;
-			const mockUpdates = {
-				revoked_by_ip: '127.0.0.1',
-				revoked_at: new Date().toISOString(),
-				replaced_by: generateRandomString(64),
-			};
-
-			const mockRows = {
-				rows: [
-					{
-						id: mockId,
-						refresh_token: generateRandomString(64),
-						user_id: 15,
-						created_by_ip: '127.0.0.1',
-						replaced_by: mockUpdates.replaced_by,
-						revoked_by_ip: mockUpdates.revoked_by_ip,
-						expiry_date: new Date().toISOString,
-						created_at: new Date().toISOString,
-						revoked_at: mockUpdates.revoked_at,
-					},
-				],
-			};
-
-			pool.query.mockResolvedValue(mockRows);
-
-			const result = await AuthModel.updateOne({
-				updates: { ...mockUpdates },
-				wheres: { id: mockId },
-			});
-
-			expect(result).toMatchObject(mockUpdates);
-			expect(result.id).toEqual(mockId);
-		});
-
-		it('should return new auth with refresh_token in where clause', async () => {
+	describe('updateMany', () => {
+		it('should return array of new auth', async () => {
 			const mockRefreshToken = generateRandomString(64);
 			const mockUpdates = {
 				revoked_by_ip: '127.0.0.1',
@@ -257,66 +225,42 @@ describe('auth/model', () => {
 
 			const mockRows = {
 				rows: [
-					{
-						id: 1,
-						refresh_token: mockRefreshToken,
-						user_id: 15,
-						created_by_ip: '127.0.0.1',
-						replaced_by: mockUpdates.replaced_by,
-						revoked_by_ip: mockUpdates.revoked_by_ip,
-						expiry_date: new Date().toISOString,
-						created_at: new Date().toISOString,
-						revoked_at: mockUpdates.revoked_at,
-					},
-				],
+          {
+            id: 1,
+            refresh_token: mockRefreshToken,
+            user_id: 15,
+            created_by_ip: '127.0.0.1',
+            replaced_by: mockUpdates.replaced_by,
+            revoked_by_ip: mockUpdates.revoked_by_ip,
+            expiry_date: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            revoked_at: mockUpdates.revoked_at,
+          },
+          {
+            id: 2,
+            refresh_token: mockRefreshToken,
+            user_id: 15,
+            created_by_ip: '127.0.0.1',
+            replaced_by: mockUpdates.replaced_by,
+            revoked_by_ip: mockUpdates.revoked_by_ip,
+            expiry_date: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            revoked_at: mockUpdates.revoked_at,
+          }
+        ],
 			};
 
 			pool.query.mockResolvedValue(mockRows);
 
-			const result = await AuthModel.updateOne({
+			const result = await AuthModel.updateMany({
 				updates: { ...mockUpdates },
 				wheres: { refresh_token: mockRefreshToken },
 			});
 
-			expect(result).toMatchObject(mockUpdates);
-			expect(result.refresh_token).toEqual(mockRefreshToken);
+			expect(result).toEqual(mockRows.rows);
 		});
 
-		it('should return new auth with replaced_by in where clause', async () => {
-			const mockReplacedBy = generateRandomString(64);
-			const mockUpdates = {
-				revoked_by_ip: '127.0.0.1',
-				revoked_at: new Date().toISOString(),
-			};
-
-			const mockRows = {
-				rows: [
-					{
-						id: 1,
-						refresh_token: generateRandomString(64),
-						user_id: 15,
-						created_by_ip: '127.0.0.1',
-						replaced_by: mockReplacedBy,
-						revoked_by_ip: mockUpdates.revoked_by_ip,
-						expiry_date: new Date().toISOString,
-						created_at: new Date().toISOString,
-						revoked_at: mockUpdates.revoked_at,
-					},
-				],
-			};
-
-			pool.query.mockResolvedValue(mockRows);
-
-			const result = await AuthModel.updateOne({
-				updates: { ...mockUpdates },
-				wheres: { replaced_by: mockReplacedBy },
-			});
-
-			expect(result).toMatchObject(mockUpdates);
-			expect(result.replaced_by).toEqual(mockReplacedBy);
-		});
-
-		it('should return null if auth is not exists', async () => {
+		it('should return empty array if auth is not exists', async () => {
 			const mockUpdates = {
 				revoked_by_ip: '127.0.0.1',
 				revoked_at: new Date().toISOString(),
@@ -329,8 +273,188 @@ describe('auth/model', () => {
 
 			pool.query.mockResolvedValue(mockRows);
 
+			const result = await AuthModel.updateMany({
+				updates: { ...mockUpdates },
+				wheres: { id: 1 },
+			});
+
+			expect(result).toEqual([]);
+		});
+
+		it('should throw error when updating user_id and user is not found', async () => {
+			const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+				replaced_by: generateRandomString(64),
+			};
+
+			const posgresqlError = {
+				name: 'foreign_key_violation',
+				code: '23503',
+				message:
+					'insert or update on table "auth" violates foreign key constraint "fk_user"',
+			};
+
+			pool.query.mockRejectedValue(posgresqlError);
+
+			await expect(
+				AuthModel.updateMany({ updates: mockUpdates, wheres: { id: 2 } })
+			).rejects.toThrowError(new TandainError(posgresqlError.message));
+		});
+	});
+
+	describe('updateOne', () => {
+		it('should return new auth with id in where clause', async () => {
+			const mockId = 1;
+			const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+				replaced_by: generateRandomString(64),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: mockId,
+					refresh_token: generateRandomString(64),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: mockUpdates.replaced_by,
+					revoked_by_ip: mockUpdates.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: mockUpdates.revoked_at,
+				},
+			];
+
+			updateManyMock.mockResolvedValue(updateManyReturn);
+
 			const result = await AuthModel.updateOne({
 				updates: { ...mockUpdates },
+				wheres: { id: mockId },
+			});
+
+			expect(result).toEqual(updateManyReturn[0]);
+			expect(result.id).toEqual(mockId);
+		});
+
+		it('should return new auth with refresh_token in where clause', async () => {
+			const mockRefreshToken = generateRandomString(64);
+			const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+				replaced_by: generateRandomString(64),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: 1,
+					refresh_token: mockRefreshToken,
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: mockUpdates.replaced_by,
+					revoked_by_ip: mockUpdates.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: mockUpdates.revoked_at,
+				},
+			];
+
+			updateManyMock.mockResolvedValue(updateManyReturn);
+
+			const result = await AuthModel.updateOne({
+				updates: { ...mockUpdates },
+				wheres: { refresh_token: mockRefreshToken },
+			});
+
+			expect(result).toEqual(updateManyReturn[0]);
+			expect(result.refresh_token).toEqual(mockRefreshToken);
+		});
+
+		it('should return new auth with replaced_by in where clause', async () => {
+			const mockReplacedBy = generateRandomString(64);
+			const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: 1,
+					refresh_token: generateRandomString(64),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: mockReplacedBy,
+					revoked_by_ip: mockUpdates.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: mockUpdates.revoked_at,
+				},
+			];
+
+			updateManyMock.mockResolvedValue(updateManyReturn);
+
+			const result = await AuthModel.updateOne({
+				updates: { ...mockUpdates },
+				wheres: { replaced_by: mockReplacedBy },
+			});
+
+			expect(result).toEqual(updateManyReturn[0]);
+			expect(result.replaced_by).toEqual(mockReplacedBy);
+		});
+
+		it('should return first updated auth if there is multiple results', async () => {
+			const mockId = 1;
+			const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+				replaced_by: generateRandomString(64),
+			};
+
+			const updateManyReturn: Auth[] = [
+				{
+					id: mockId,
+					refresh_token: generateRandomString(64),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: mockUpdates.replaced_by,
+					revoked_by_ip: mockUpdates.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: mockUpdates.revoked_at,
+				},
+				{
+					id: mockId,
+					refresh_token: generateRandomString(64),
+					user_id: 16,
+					created_by_ip: '127.0.0.2',
+					replaced_by: mockUpdates.replaced_by,
+					revoked_by_ip: mockUpdates.revoked_by_ip,
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: mockUpdates.revoked_at,
+				},
+			];
+
+			updateManyMock.mockResolvedValue(updateManyReturn);
+
+			const result = await AuthModel.updateOne({
+				updates: { ...mockUpdates },
+				wheres: { id: mockId },
+			});
+
+			expect(result).toEqual(updateManyReturn[0]);
+			expect(result.id).toEqual(mockId);
+		});
+
+		it('should return null if auth is not exists', async () => {
+			updateManyMock.mockResolvedValue([]);
+
+			const result = await AuthModel.updateOne({
+				updates: {
+					revoked_by_ip: '127.0.0.1',
+					revoked_at: new Date().toISOString(),
+					replaced_by: generateRandomString(64),
+				},
 				wheres: { id: 1 },
 			});
 
@@ -345,10 +469,19 @@ describe('auth/model', () => {
 					'insert or update on table "auth" violates foreign key constraint "fk_user"',
 			};
 
-			pool.query.mockRejectedValue(posgresqlError);
+      const mockUpdates = {
+				revoked_by_ip: '127.0.0.1',
+				revoked_at: new Date().toISOString(),
+				replaced_by: generateRandomString(64),
+			};
 
-			await expect(AuthModel.findOne({ id: 2 })).rejects.toThrowError(
-				posgresqlError.message
+			updateManyMock.mockRejectedValue({
+				code: 500,
+				message: posgresqlError.message,
+			});
+
+			await expect(AuthModel.updateOne({ updates: mockUpdates, wheres: { id: 2 } })).rejects.toThrowError(
+				new TandainError(posgresqlError.message)
 			);
 		});
 	});

@@ -3,9 +3,21 @@ import request from 'supertest';
 
 import { app, server } from '@/app';
 import Auth from '../service';
+import TandainError from '@/utils/TandainError';
 
 const mockLoginWithGoogle = jest.spyOn(Auth, 'loginWithGoogle');
-const mockRefreshToken = jest.spyOn(Auth, 'refreshToken')
+const mockRefreshToken = jest.spyOn(Auth, 'refreshToken');
+const mockRevoke = jest.spyOn(Auth, 'revoke');
+
+jest.mock('@/middleware/authenticate', () => jest.fn((req, _2, next) => {
+  req.user = {
+    id: 1,
+    name: 'test',
+    email: 'test@test.com'
+  }
+
+  next()
+}));
 
 const BASE_URL = '/api/v1';
 
@@ -42,7 +54,7 @@ describe('auth/controller', () => {
 
 			expect(typeof parsedCookies['id_token']).toBe('string');
 			expect(res.body).toEqual({
-        refresh_token: mockLoginWithGoogleResult.refreshToken,
+				refresh_token: mockLoginWithGoogleResult.refreshToken,
 				message: mockLoginWithGoogleResult.message,
 			});
 		});
@@ -70,16 +82,16 @@ describe('auth/controller', () => {
 
 	describe('POST /auth/refresh', () => {
 		it('should send new id_token, expiry_date, refresh_token, and success message', async () => {
-      const mockNewRefreshToken = generateRandomString(64);
+			const mockNewRefreshToken = generateRandomString(64);
 			const mockNewIdToken = generateRandomString(128);
-      const mockNewIdTokenExpMs = Date.now() + 3600000
-      
-      mockRefreshToken.mockResolvedValue({
+			const mockNewIdTokenExpMs = Date.now() + 3600000;
+
+			mockRefreshToken.mockResolvedValue({
 				idToken: mockNewIdToken,
 				idTokenExpMs: mockNewIdTokenExpMs,
 				refreshToken: mockNewRefreshToken,
 				message: 'Refresh token successfully',
-			})
+			});
 
 			const res = await request(app)
 				.post(`${BASE_URL}/auth/refresh`)
@@ -89,21 +101,20 @@ describe('auth/controller', () => {
 				})
 				.expect(200);
 
-      const rawCookies = res.headers['set-cookie'][0];
-      const parsedCookies = parseCookies(rawCookies);
+			const rawCookies = res.headers['set-cookie'][0];
+			const parsedCookies = parseCookies(rawCookies);
 
-      expect(typeof parsedCookies['id_token']).toBe('string');
-      expect(res.body).toEqual({
+			expect(typeof parsedCookies['id_token']).toBe('string');
+			expect(res.body).toEqual({
 				id_token: mockNewIdToken,
 				expiry_date: mockNewIdTokenExpMs,
 				refresh_token: mockNewRefreshToken,
 				message: 'Refresh token successfully',
 			});
-
 		});
 
 		it('should send "Required parameter refresh_token is expired" error if refresh_token has been revoked', async () => {
-      const mockError = {
+			const mockError = {
 				name: 'Bad Request',
 				code: 400,
 				message: "Required parameter 'refresh_token' is expired",
@@ -120,6 +131,62 @@ describe('auth/controller', () => {
 				.expect(400);
 
 			expect(res.body).toEqual(mockError);
-    });
+		});
+	});
+
+	describe('POST /auth/logout', () => {
+		it('should revoke authentication and clear id_token cookie', async () => {
+			const mockIdToken = generateRandomString(128);
+
+			mockRevoke.mockResolvedValue([
+				{
+					id: 1,
+					refresh_token: generateRandomString(128),
+					user_id: 15,
+					created_by_ip: '127.0.0.1',
+					replaced_by: null,
+					revoked_by_ip: '127.0.0.1',
+					expiry_date: new Date().toISOString(),
+					created_at: new Date().toISOString(),
+					revoked_at: new Date().toISOString(),
+				},
+			]);
+
+			const res = await request(app)
+				.post(`${BASE_URL}/auth/logout`)
+				.set('Cookie', `id_token=${mockIdToken};`)
+				.send()
+				.expect(302)
+				.expect('Location', '/');
+
+      
+      const rawCookies = res.headers['set-cookie'][0];
+			const parsedCookies = parseCookies(rawCookies);
+
+			expect(parsedCookies.id_token).toEqual('');
+		});
+
+		it('should throw "Something went wrong" if there is error in revoking authentication', async () => {
+      const mockIdToken = generateRandomString(128);
+      const mockError = {
+        name: 'Internal Server Error',
+        code: 500,
+        message: 'Something went wrong'
+      }
+      
+      mockRevoke.mockImplementation(() => {
+        throw new TandainError(mockError.message, {
+          code: mockError.code
+        })
+      })
+
+      const res = await request(app)
+				.post(`${BASE_URL}/auth/logout`)
+				.set('Cookie', `id_token=${mockIdToken};`)
+				.send()
+				.expect(mockError.code)
+
+        expect(res.body).toEqual(mockError);
+    })
 	});
 });
