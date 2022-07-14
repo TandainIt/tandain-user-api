@@ -19,11 +19,6 @@ const findOneUserMock = jest.spyOn(User, 'findOne');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
 const getUserProfileMock = jest.spyOn(Auth as any, 'getUserProfile');
-const generateIdTokenMock = jest.spyOn(Auth as any, 'generateIdToken');
-const generateRefreshTokenMock = jest.spyOn(
-	Auth as any,
-	'generateRefreshToken'
-);
 const generateCredentialsMock = jest.spyOn(Auth as any, 'generateCredentials');
 
 const findOneAuthMock = jest.spyOn(AuthModel, 'findOne');
@@ -169,43 +164,14 @@ describe('auth/service', () => {
 		});
 	});
 
-	describe('generateIdToken', () => {
-		it('should generate jwt token', () => {
-			const user = new User(1, 'test', 'test@gmail.com', 'test.com');
-
-			const idToken = Auth['generateIdToken']({
-				iss: process.env.HOST,
-				exp: 1,
-				aud: process.env.HOST,
-				userId: user.id,
-				userName: user.name,
-				userEmail: user.email,
-			});
-
-			expect(typeof idToken).toBe('string');
-		});
-	});
-
-	describe('generateRefreshToken', () => {
-		it('should success generate a new refresh token and expiry;', async () => {
-			const generateRefreshToken = Auth['generateRefreshToken'];
-
-			const { refreshToken, expiryDateMs } = await generateRefreshToken();
-
-			expect(typeof refreshToken).toEqual('string');
-			expect(refreshToken.length).toEqual(64);
-			expect(typeof expiryDateMs).toEqual('number');
-		});
-	});
-
 	describe('generateCredentials', () => {
 		it('should success generate idToken, refreshToken, and their expiry date', async () => {
 			const generateCredentials = Auth['generateCredentials'];
 
 			const credentials = await generateCredentials({
-				userId: 1,
-				userName: 'Test',
-				userEmail: 'test@test.com',
+				id: 1,
+				name: 'Test',
+				email: 'test@test.com',
 			});
 
 			expect(credentials).toMatchObject({
@@ -221,14 +187,16 @@ describe('auth/service', () => {
 
 	describe('loginWithGoogle', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
-		const mockIdToken = generateRandomString();
-		const mockRefreshToken = {
-			refreshToken: generateRandomString(64),
-			expiryDateMs: Date.now() + 5259600000,
-		};
 
 		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
 			const { name, email, photoURL } = mockUser;
+
+      const mockCredentials = {
+				idToken: generateRandomString(128),
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: generateRandomString(64),
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -243,8 +211,7 @@ describe('auth/service', () => {
 
 			findByEmailUserMock.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
-			generateIdTokenMock.mockReturnValue(mockIdToken);
-			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+      generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -258,13 +225,20 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockIdToken);
-			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
+			expect(result.idToken).toEqual(mockCredentials.idToken);
+			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 
 		it('should return idToken and success message with the existing user email', async () => {
 			const { name, email, photoURL } = mockUser;
+
+      const mockCredentials = {
+				idToken: generateRandomString(128),
+				idTokenExpMs: Date.now() + 3600000,
+				refreshToken: generateRandomString(64),
+				refreshTokenExpMs: Date.now() + 5259600000,
+			};
 
 			exchangeOAuthCodeMock.mockResolvedValue({
 				access_token: 'access_token',
@@ -278,8 +252,7 @@ describe('auth/service', () => {
 			});
 
 			findByEmailUserMock.mockResolvedValue(mockUser);
-			generateIdTokenMock.mockReturnValue(mockIdToken);
-			generateRefreshTokenMock.mockResolvedValue(mockRefreshToken);
+      generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -293,8 +266,8 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockIdToken);
-			expect(result.refreshToken).toEqual(mockRefreshToken.refreshToken);
+			expect(result.idToken).toEqual(mockCredentials.idToken);
+			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
 			expect(result.message).toEqual('Logged in successfully');
 		});
 

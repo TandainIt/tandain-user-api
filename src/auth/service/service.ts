@@ -11,9 +11,8 @@ import {
 	PARAM_REDIRECT_URI_INVALID,
 } from '../errors';
 import {
-	AuthJwtPayload,
+	JWTPayload,
 	GenerateCredentialsArgs,
-	GenerateIdTokenArgs,
 } from './service.types';
 import { generateRandomCryptoString } from '@/utils/utils';
 
@@ -102,49 +101,20 @@ class Auth {
 		}
 	}
 
-	private static generateIdToken({
-		iss,
-		exp,
-		aud,
-		userId,
-		userName,
-		userEmail,
-	}: GenerateIdTokenArgs) {
-		const payload = {
-			iss, // Issuer of the token
-			sub: userId, // Subject
-			exp, // Expiry date
-			aud, // Recipient of the token
-			name: userName,
-			email: userEmail,
-		}; // Reference: https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
-
-		const secret = process.env.JWT_SECRET as string;
-
-		return jwt.sign(payload, secret);
-	}
-
-	private static async generateRefreshToken() {
-		const refreshToken = await generateRandomCryptoString(48);
-		const expiryDateMs = Date.now() + 5259600000; // NOTE: Expired in 2 Months
-
-		return { refreshToken, expiryDateMs };
-	}
-
 	private static async generateCredentials({
-		userId,
-		userName,
-		userEmail,
+		id,
+		name,
+		email,
 	}: GenerateCredentialsArgs) {
 		const idTokenExpMs = Date.now() + 3600000;
 
 		const idTokenPayload = {
 			iss: process.env.HOST, // Issuer of the token
-			sub: userId, // Subject
+			sub: id, // Subject
 			exp: idTokenExpMs, // Expiry date
 			aud: process.env.HOST, // Recipient of the token
-			name: userName,
-			email: userEmail,
+			name,
+			email,
 		}; // Reference: https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
 
 		const secret = process.env.JWT_SECRET as string;
@@ -167,7 +137,7 @@ class Auth {
 		clientIp: string
 	) {
 		try {
-			const { access_token, expiry_date } = await this.exchangeOAuthCode(
+			const { access_token } = await this.exchangeOAuthCode(
 				code,
 				redirectUri
 			);
@@ -181,21 +151,16 @@ class Auth {
 				user = await User.create(name, email, photoURL);
 			}
 
-			const idToken = this.generateIdToken({
-				iss: process.env.HOST,
-				exp: expiry_date,
-				aud: process.env.HOST,
-				userId: user.id,
-				userName: user.name,
-				userEmail: user.email,
+      const { idToken, refreshToken, refreshTokenExpMs } = await this.generateCredentials({
+				id: user.id,
+				name: user.name,
+				email: user.email,
 			});
-
-			const { refreshToken, expiryDateMs } = await this.generateRefreshToken();
 
 			await AuthModel.insertOneAuth(
 				refreshToken,
 				user.id,
-				expiryDateMs,
+				refreshTokenExpMs,
 				clientIp
 			);
 
@@ -242,9 +207,9 @@ class Auth {
 			}
 
 			const newCredentials = await this.generateCredentials({
-				userId: oldAuth.user_id,
-				userName: user.name,
-				userEmail: user.email,
+				id: oldAuth.user_id,
+				name: user.name,
+				email: user.email,
 			});
 
 			await AuthModel.updateOne({
@@ -289,7 +254,7 @@ class Auth {
 			const { sub, name, email } = jwt.verify(
 				idToken,
 				secret
-			) as unknown as AuthJwtPayload;
+			) as unknown as JWTPayload;
 
 			const user = {
 				id: sub,
