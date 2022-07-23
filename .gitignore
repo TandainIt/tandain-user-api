@@ -1,7 +1,8 @@
 /node_modules
 /coverage
+/dist
+/migrate
 
 .env
 .env.local
 
-/dist

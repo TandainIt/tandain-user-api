@@ -1,6 +1,6 @@
 import { QueryResult } from 'pg';
 
-import pool from '@/postgresql/postgresql';
+import pool from '@/config/db/postgresql';
 import TandainError from '@/utils/TandainError';
 import Auth from '../service';
 import { joinQuery } from '@/utils/model';
