@@ -1,10 +1,11 @@
 {
-	"name": "tandain-user",
+	"name": "tandain-user-api",
 	"version": "1.0.0",
 	"main": "index.js",
 	"author": "Peitra Erdi <peitrae@gmail.com>",
 	"license": "MIT",
 	"scripts": {
+    "build": "npx tsc",
 		"dev": "env-cmd -f .env.local nodemon",
 		"test": "env-cmd -f .env.local jest"
 	},
