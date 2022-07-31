@@ -16,6 +16,28 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: dev_tandain_user; Type: DATABASE; Schema: -; Owner: postgres
+--
+
+CREATE DATABASE dev_tandain_user WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'English_Indonesia.1252';
+
+
+ALTER DATABASE dev_tandain_user OWNER TO postgres;
+
+\connect dev_tandain_user
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -64,9 +86,6 @@ CREATE TABLE public.users (
     photo_url character varying(255)
 );
 
-
-ALTER TABLE public.users OWNER TO me;
-
 --
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: me
 --
@@ -78,9 +97,6 @@ CREATE SEQUENCE public.users_id_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
-
-
-ALTER TABLE public.users_id_seq OWNER TO me;
 
 --
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: me
@@ -142,28 +158,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.auth
     ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
-
-
---
--- Name: TABLE auth; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.auth TO tandain_admin;
-
-
---
--- Name: TABLE users; Type: ACL; Schema: public; Owner: me
---
-
-GRANT ALL ON TABLE public.users TO tandain_admin;
-
-
---
--- Name: SEQUENCE users_id_seq; Type: ACL; Schema: public; Owner: me
---
-
-GRANT USAGE ON SEQUENCE public.users_id_seq TO tandain_admin;
-
 
 --
 -- PostgreSQL database dump complete
