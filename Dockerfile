@@ -5,7 +5,7 @@
 FROM node:16-alpine as base
 
 # Create app directory
-WORKDIR /src
+WORKDIR /app
 
 COPY package.json ./
 COPY yarn.lock ./
@@ -13,7 +13,6 @@ COPY yarn.lock ./
 EXPOSE 3001
 
 FROM base as development
-ENV NODE_ENV=development
 
 # Bundle app source
 COPY /dist .
