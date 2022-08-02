@@ -1,4 +1,9 @@
 node_modules
-yarn-error.log
+coverage
+
 .git
-.gitignore
+
+.env
+.env.local
+
+yarn-error.log

@@ -1,4 +1,4 @@
-import pool from '../../postgresql/postgresql';
+import pool from '@/config/db/postgresql';
 import { QueryResult } from 'pg';
 
 import User from '../service';
