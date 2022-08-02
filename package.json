@@ -5,9 +5,10 @@
 	"author": "Peitra Erdi <peitrae@gmail.com>",
 	"license": "MIT",
 	"scripts": {
-    "build": "npx tsc",
 		"dev": "env-cmd -f .env.local nodemon",
-    "docker": "nodemon -L",
+		"build": "npx tsc && tsc-alias",
+		"start": "node dist/src/app.js",
+		"docker": "nodemon -L",
 		"test": "env-cmd -f .env.local jest"
 	},
 	"dependencies": {
@@ -34,6 +35,7 @@
 		"supertest": "^6.2.3",
 		"ts-jest": "^28.0.5",
 		"ts-node": "^10.8.0",
+		"tsc-alias": "^1.7.0",
 		"typescript": "^4.6.4"
 	},
 	"_moduleAliases": {
