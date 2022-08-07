@@ -70,7 +70,9 @@ describe('user/service', () => {
 
 			await expect(
 				User.create(mockUser.name, mockUser.email, mockUser.photoURL)
-			).rejects.toThrow(TandainError);
+			).rejects.toThrowError(
+				new TandainError('Key (email)=(test@test.com) already exists')
+			);
 		});
 	});
 
@@ -100,11 +102,11 @@ describe('user/service', () => {
 
 		it('should throw an error when PostgreSQL system is error', async () => {
 			mockFindByEmail.mockRejectedValue({
-				message: 'PostgreSQL system is error',
+				message: 'Failed to retrieve memory usage at process exit',
 			});
 
-			await expect(User.findByEmail('test@test.com')).rejects.toThrow(
-				TandainError
+			await expect(User.findByEmail('test@test.com')).rejects.toThrowError(
+				new TandainError('Failed to retrieve memory usage at process exit')
 			);
 		});
 	});

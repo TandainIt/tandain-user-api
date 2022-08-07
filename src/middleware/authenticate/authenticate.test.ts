@@ -1,13 +1,12 @@
-import { generateRandomString } from '@/utils/utils';
 import { NextFunction, Request, Response } from 'express';
+import jwt, { TokenExpiredError } from 'jsonwebtoken';
 
-import Auth from '@/auth/service';
+import { generateRandomString } from '@/utils/utils';
 import authenticate from './authenticate';
-import TandainError from '@/utils/TandainError';
 
-const verifyMock = jest.spyOn(Auth, 'verify');
+const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
-describe('authenticate', () => {
+describe('middleware/authenticate', () => {
 	let mockRequest: Partial<Request>;
 	let mockResponse: Partial<Response>;
 	let nextFunction: NextFunction = jest.fn();
@@ -21,20 +20,20 @@ describe('authenticate', () => {
 		};
 	});
 
-	it('should success authenticate and add user property to Express request', () => {
+	it('should authenticate user and add user property in Express request', () => {
 		mockRequest = {
-			cookies: {
-				id_token: generateRandomString(128),
+			headers: {
+				authorization: `Bearer ${generateRandomString(128)}`,
 			},
 		};
 
-		const mockUser = {
-			id: 1,
+		const mockJwtReturnValue = {
+			sub: 1,
 			name: 'test',
 			email: 'test@test.com',
 		};
 
-		verifyMock.mockReturnValue(mockUser);
+		mockJwtVerify.mockImplementation(() => mockJwtReturnValue);
 
 		authenticate(
 			mockRequest as Request,
@@ -42,15 +41,17 @@ describe('authenticate', () => {
 			nextFunction
 		);
 
-		const { user } = mockRequest;
-
 		expect(nextFunction).toHaveBeenCalled();
-		expect(user).toEqual(mockUser);
+		expect(mockRequest.user).toEqual({
+			id: mockJwtReturnValue.sub,
+			name: mockJwtReturnValue.name,
+			email: mockJwtReturnValue.email,
+		});
 	});
 
-	it('should send "id_token is not exist" message if id_token is not provided', () => {
+	it('should send "Authentication token is not exist" message if token is not exist', () => {
 		mockRequest = {
-			cookies: {},
+			headers: {},
 		};
 
 		authenticate(
@@ -62,35 +63,33 @@ describe('authenticate', () => {
 		expect(mockResponse.status).toHaveBeenCalledWith(401);
 		expect(mockResponse.json).toHaveBeenCalledWith({
 			code: 401,
-			location: 'authenticate',
-			name: 'Unauthorized',
-			message: 'id_token is not exist',
+			name: 'INVALID_TOKEN',
+			message: 'Authentication token is not exist',
 		});
 	});
 
-	it('should send "Unauthenticated" message if user in id_token is fail to verify', () => {
+	it('should send "Authentication is expired" message if token is expired', () => {
+		mockJwtVerify.mockImplementation(() => {
+			throw new TokenExpiredError('jwt expired', new Date());
+		});
+
 		mockRequest = {
-			cookies: {
-				id_token: generateRandomString(128),
+			headers: {
+				authorization: `Bearer ${generateRandomString(128)}`,
 			},
 		};
 
-		verifyMock.mockImplementation(() => {
-			throw new TandainError('Fail to verify jwt token', { code: 401 });
-		});
-
 		authenticate(
 			mockRequest as Request,
 			mockResponse as Response,
 			nextFunction
 		);
 
-		expect(mockResponse.status).toHaveBeenCalledWith(401);
+	  expect(mockResponse.status).toHaveBeenCalledWith(401);
 		expect(mockResponse.json).toHaveBeenCalledWith({
 			code: 401,
-			location: 'authenticate',
-			message: 'Fail to verify jwt token',
-			name: 'Unauthorized',
+			name: 'TOKEN_EXPIRED',
+			message: 'Authentication is expired',
 		});
 	});
 });

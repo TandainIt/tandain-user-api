@@ -204,12 +204,13 @@ describe('auth/model', () => {
 			const posgresqlError = {
 				name: 'system_error',
 				code: '58000',
+        message: 'Failed to retrieve memory usage at process exit'
 			};
 
 			pool.query.mockRejectedValue(posgresqlError);
 
 			await expect(AuthModel.findOne({ id: 2 })).rejects.toThrowError(
-				TandainError
+				new TandainError('Failed to retrieve memory usage at process exit')
 			);
 		});
 	});

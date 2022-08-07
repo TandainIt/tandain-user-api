@@ -14,6 +14,8 @@ class TandainError extends Error {
 		this.name = name || reasonPhrase || ReasonPhrases.INTERNAL_SERVER_ERROR;
 		this.code = code || StatusCodes.INTERNAL_SERVER_ERROR;
 		this.location = location;
+
+    Error.captureStackTrace(this);
 	}
 }
 

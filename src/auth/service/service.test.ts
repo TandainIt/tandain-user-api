@@ -1,5 +1,4 @@
 import axios from 'axios';
-import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
 import Auth from './service';
 import AuthModel from '../model';
@@ -10,8 +9,6 @@ import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
-
-const mockJwtVerify = jest.spyOn(jwt, 'verify');
 
 const createUserMock = jest.spyOn(User, 'create');
 const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
@@ -423,13 +420,6 @@ describe('auth/service', () => {
 				revoked_at: null,
 			};
 
-			const mockUser = {
-				id: 15,
-				name: 'test',
-				email: 'test@test.com',
-				photoURL: 'test.com',
-			};
-
 			findOneAuthMock.mockResolvedValue(mockOldAuth);
 			findOneUserMock.mockResolvedValue(null);
 
@@ -481,48 +471,6 @@ describe('auth/service', () => {
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
 			).rejects.toThrow('Something went wrong');
-		});
-	});
-
-	describe('verify', () => {
-		it('should successfully verify idToken and return user', () => {
-			const mockJwtReturnValue = {
-				sub: generateRandomString(),
-				name: 'test',
-				email: 'test@test.com',
-			};
-			const { sub, name, email } = mockJwtReturnValue;
-			mockJwtVerify.mockImplementation(() => mockJwtReturnValue);
-
-			const mockIdToken = generateRandomString(128);
-
-			const result = Auth.verify(mockIdToken);
-
-			expect(result).toEqual({ id: sub, name, email });
-		});
-
-		it('should return "Authentication is expired"', () => {
-			mockJwtVerify.mockImplementation(() => {
-				throw new TokenExpiredError('jwt expired', new Date());
-			});
-
-			const mockIdToken = generateRandomString(128);
-
-			expect(() => Auth.verify(mockIdToken)).toThrowError(
-				new TandainError('Authentication is expired')
-			);
-		});
-
-		it('should return "Fail to verify jwt token" error if jwt fail to verify idToken', () => {
-			mockJwtVerify.mockImplementation(() => {
-				throw new JsonWebTokenError('jwt malformed');
-			});
-
-			const mockIdToken = generateRandomString(128);
-
-			expect(() => Auth.verify(mockIdToken)).toThrowError(
-				new TandainError('Fail to verify jwt token')
-			);
 		});
 	});
 

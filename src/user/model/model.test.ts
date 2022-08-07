@@ -58,7 +58,7 @@ describe('user/model', () => {
 				],
 			};
 
-      const { id, name, email, photo_url } = mockRows.rows[0];
+			const { id, name, email, photo_url } = mockRows.rows[0];
 			const mockResult = { id, name, email, photoURL: photo_url };
 
 			pool.query.mockResolvedValueOnce(mockRows);
@@ -68,17 +68,20 @@ describe('user/model', () => {
 			expect(user).toEqual(mockResult);
 		});
 
-		it('should throw an error when create duplicate user', async () => {
+		it('should throw an error when posgresql went wrong', async () => {
 			const posgresqlError = {
 				name: 'error',
 				code: '23505',
+        message: 'Failed to retrieve memory usage at process exit'
 			};
 
 			pool.query.mockRejectedValue(posgresqlError);
 
 			await expect(
 				UserModel.create('test', 'test@test.com', 'test.jpg')
-			).rejects.toThrowError(TandainError);
+			).rejects.toThrowError(
+				new TandainError('Failed to retrieve memory usage at process exit')
+			);
 		});
 	});
 
@@ -95,7 +98,7 @@ describe('user/model', () => {
 				],
 			};
 
-      const { id, name, email, photo_url } = mockRows.rows[0];
+			const { id, name, email, photo_url } = mockRows.rows[0];
 			const mockResult = { id, name, email, photoURL: photo_url };
 
 			pool.query.mockResolvedValueOnce(mockRows);
@@ -121,19 +124,20 @@ describe('user/model', () => {
 			const posgresqlError = {
 				name: 'system_error',
 				code: '58000',
+				message: 'Failed to retrieve memory usage at process exit',
 			};
 
 			pool.query.mockRejectedValue(posgresqlError);
 
 			await expect(UserModel.findByEmail('test@test.com')).rejects.toThrowError(
-				TandainError
+				new TandainError('Failed to retrieve memory usage at process exit')
 			);
 		});
 	});
 
-  describe('findOne', () => {
+	describe('findOne', () => {
 		it('should return user by id', async () => {
-      const mockId = 1
+			const mockId = 1;
 			const mockRows = {
 				rows: [
 					{
@@ -192,12 +196,13 @@ describe('user/model', () => {
 			const posgresqlError = {
 				name: 'system_error',
 				code: '58000',
+				message: 'Failed to retrieve memory usage at process exit',
 			};
 
 			pool.query.mockRejectedValue(posgresqlError);
 
 			await expect(UserModel.findOne({ id: 2 })).rejects.toThrowError(
-				TandainError
+				new TandainError('Failed to retrieve memory usage at process exit')
 			);
 		});
 	});

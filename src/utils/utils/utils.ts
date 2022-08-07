@@ -24,16 +24,3 @@ export const generateRandomCryptoString = async (length: number) => {
 		throw new TandainError(err.message);
 	}
 };
-
-export const parseCookies = (rawCookie: string): Record<string, string> => {
-	const cookies: Record<string, string> = {};
-	rawCookie &&
-		rawCookie.split(';').forEach(function (cookie: string) {
-			const parts: RegExpMatchArray | null = cookie.match(/(.*?)=(.*)$/);
-			if (parts && parts.length) {
-				cookies[parts[1].trim()] = parts[2].trim();
-			}
-		});
-
-	return cookies;
-};

@@ -10,10 +10,7 @@ import {
 	PARAM_CODE_INVALID,
 	PARAM_REDIRECT_URI_INVALID,
 } from '../errors';
-import {
-	JWTPayload,
-	GenerateCredentialsArgs,
-} from './service.types';
+import { GenerateCredentialsArgs } from './service.types';
 import { generateRandomCryptoString } from '@/utils/utils';
 
 class Auth {
@@ -137,10 +134,7 @@ class Auth {
 		clientIp: string
 	) {
 		try {
-			const { access_token } = await this.exchangeOAuthCode(
-				code,
-				redirectUri
-			);
+			const { access_token } = await this.exchangeOAuthCode(code, redirectUri);
 
 			const userProfile = await this.getUserProfile(access_token as string);
 			const { name, email, photoURL } = userProfile;
@@ -151,11 +145,12 @@ class Auth {
 				user = await User.create(name, email, photoURL);
 			}
 
-      const { idToken, refreshToken, refreshTokenExpMs } = await this.generateCredentials({
-				id: user.id,
-				name: user.name,
-				email: user.email,
-			});
+			const { idToken, refreshToken, refreshTokenExpMs } =
+				await this.generateCredentials({
+					id: user.id,
+					name: user.name,
+					email: user.email,
+				});
 
 			await AuthModel.insertOneAuth(
 				refreshToken,
@@ -244,31 +239,6 @@ class Auth {
 			throw new TandainError(err.message, {
 				...err,
 			});
-		}
-	}
-
-	static verify(idToken: string) {
-		try {
-			const secret = process.env.JWT_SECRET as string;
-
-			const { sub, name, email } = jwt.verify(
-				idToken,
-				secret
-			) as unknown as JWTPayload;
-
-			const user = {
-				id: sub,
-				name: name,
-				email: email,
-			};
-
-			return user;
-		} catch (err) {
-			if (err.name === 'TokenExpiredError') {
-				throw new TandainError('Authentication is expired', { code: 401 });
-			}
-
-			throw new TandainError('Fail to verify jwt token', { code: 401 });
 		}
 	}
 

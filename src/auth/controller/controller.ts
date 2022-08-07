@@ -19,12 +19,7 @@ router.post(
 				req.ip
 			);
 
-			res
-				.cookie('id_token', idToken, {
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-				})
-				.send({ message, refresh_token: refreshToken });
+			res.send({ message, id_token: idToken, refresh_token: refreshToken });
 		} catch (err) {
 			res.status(err.code).json({ ...err, message: err.message });
 		}
@@ -41,17 +36,12 @@ router.post(
 			const { idToken, refreshToken, idTokenExpMs, message } =
 				await Auth.refreshToken(oldRefreshToken, req.ip);
 
-			res
-				.cookie('id_token', idToken, {
-					httpOnly: true,
-					secure: process.env.NODE_ENV === 'production',
-				})
-				.send({
-					id_token: idToken,
-					expiry_date: idTokenExpMs,
-					refresh_token: refreshToken,
-					message,
-				});
+			res.send({
+				id_token: idToken,
+				expiry_date: idTokenExpMs,
+				refresh_token: refreshToken,
+				message,
+			});
 		} catch (err) {
 			res.status(err.code).json({ ...err, message: err.message });
 		}
@@ -59,19 +49,13 @@ router.post(
 );
 
 router.post('/auth/logout', authenticate, async (req, res) => {
-  try {
-    await Auth.revoke(req.ip, req.user.id)
+	try {
+		await Auth.revoke(req.ip, req.user.id);
 
-    res.clearCookie('id_token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-    });
-  
-    res.redirect('/');
-
-  } catch (err) {
-    res.status(err.code).json({ ...err, message: err.message });
-  }
+		res.redirect('/');
+	} catch (err) {
+		res.status(err.code).json({ ...err, message: err.message });
+	}
 });
 
 export default router;
