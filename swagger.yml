@@ -1,0 +1,117 @@
+openapi: 3.0.0
+info:
+  title: User API
+  description: Tandain User API
+  version: 0.1.1
+  license: 
+    name: MIT,
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Local server for development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  api/v1/auth/login:
+    post:
+      summary: Return user credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code: 
+                  type: string
+                  example: 4/0AX4XfWjvrNROKEUeD6KJipNcKqV2wswwZkEGxCm7ChHs2ZCrSpl2h9-FIx7OSaRMo0w3Pg
+                redirectUri:
+                  type: string
+                  example: http://localhost:3000/auth/google-oauth
+      responses:
+        '200':
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+                    example: Logged in successfully
+                  id_token: 
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzMDAxIiwic3ViIjoxLCJleHAiOjE2NTk4NzY3MTIyMDMsImF1ZCI6IjMwMDEiLCJuYW1lIjoiUGVpdHJhIEVyZGkiLCJlbWFpbCI6InBlaXRyYWVAZ21haWwuY29tIiwiaWF0IjoxNjU5ODczMTEyfQ.SVu5jVWTPxy-eBTQWTq58iba7uuryeNNRgZYAWwfqyA
+                  refresh_token: 
+                    type: string
+                    example: avvRXUia+DXMtm77YxnueZh3clI7DrOjwDUNdqjb78JDfaxSar7yq2c4BB/sql5r
+        '400':
+          description: Authentication code is expired or invalid
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: Invalid Grant
+                  code: 
+                    type: integer
+                    format: int64
+                    example: 400
+                  message:
+                    type: string
+                    example: Required parameter 'code' is expired or invalid
+          
+  api/v1/auth/refresh:
+    post:
+      summary: Later
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  example: avvRXUia+DXMtm77YxnueZh3clI7DrOjwDUNdqjb78JDfaxSar7yq2c4BB/sql5r
+      response:
+        '200'
+          description: Later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id_token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzMDAxIiwic3ViIjoxLCJleHAiOjE2NTk4NzY3MTIyMDMsImF1ZCI6IjMwMDEiLCJuYW1lIjoiUGVpdHJhIEVyZGkiLCJlbWFpbCI6InBlaXRyYWVAZ21haWwuY29tIiwiaWF0IjoxNjU5ODczMTEyfQ.SVu5jVWTPxy-eBTQWTq58iba7uuryeNNRgZYAWwfqyA
+                  expiry_date: 
+                    type: integer
+                    format: int64
+                    example: 1659876724659
+                  refresh_token:
+                    type: string
+                    example: avvRXUia+DXMtm77YxnueZh3clI7DrOjwDUNdqjb78JDfaxSar7yq2c4BB/sql5r
+                  message:
+                    type: string
+                    example: Refresh token successfully
+  api/v1/auth/logout:
+    post:
+      summary: Later
+      security:
+        - bearerAuth: []
+      response: 
+        '302':
+          description: Log out user and redirect them to home
+
+
+                   
