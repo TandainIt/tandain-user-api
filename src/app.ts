@@ -1,4 +1,3 @@
-import cookieParser from 'cookie-parser';
 import express from 'express';
 import 'module-alias/register';
 
@@ -7,7 +6,6 @@ import { authRouter } from './auth/controller';
 const app = express();
 const port = process.env.PORT;
 
-app.use(cookieParser());
 app.use(express.json());
 app.set('trust proxy', true);
 

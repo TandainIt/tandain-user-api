@@ -1,5 +1,1 @@
-export {
-	generateRandomString,
-	parseCookies,
-	generateRandomCryptoString,
-} from './utils';
+export { generateRandomString, generateRandomCryptoString } from './utils';

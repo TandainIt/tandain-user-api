@@ -19,7 +19,7 @@ class UserModel {
 
 			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
-			throw new TandainError(err.detail);
+			throw new TandainError(err.message);
 		}
 	}
 
@@ -37,7 +37,7 @@ class UserModel {
 
 			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
-			throw new TandainError(err.detail);
+			throw new TandainError(err.message);
 		}
 	}
 
@@ -57,7 +57,7 @@ class UserModel {
 
       return user
 		} catch (err) {
-			throw new TandainError(err.message, { location: 'findOneAuth' });
+			throw new TandainError(err.message);
 		}
 	} 
 }

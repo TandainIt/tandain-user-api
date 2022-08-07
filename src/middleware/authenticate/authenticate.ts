@@ -1,35 +1,52 @@
 import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
-import Auth from '@/auth/service';
 import TandainError from '@/utils/TandainError';
+import { JWTPayload } from './authenticate.types';
 
 const authenticate = async (
 	req: Request,
 	res: Response,
 	next: NextFunction
 ) => {
+	const jwtSecret = process.env.JWT_SECRET as string;
+
 	try {
-		const idToken = req.cookies['id_token'];
+		const idToken = req.headers.authorization?.split(' ')[1];
 
 		if (!idToken) {
-			throw new TandainError('id_token is not exist', {
-				name: 'Unauthorized',
+			throw new TandainError('Authentication token is not exist', {
 				code: 401,
+				name: 'INVALID_TOKEN',
 			});
 		}
 
-		const user = Auth.verify(idToken);
+		const { sub, name, email } = jwt.verify(
+			idToken,
+			jwtSecret
+		) as unknown as JWTPayload;
+
+		const user = {
+			id: sub,
+			name: name,
+			email: email,
+		};
 
 		req.user = user;
 
 		return next();
 	} catch (err) {
-		res.status(401).json({
-			...err,
-			name: 'Unauthorized',
-			location: 'authenticate',
-			message: err.message,
-		});
+		if (err.name === 'TokenExpiredError') {
+			res.status(401).json({
+				code: 401,
+				name: 'TOKEN_EXPIRED',
+				message: 'Authentication is expired',
+			});
+
+			return;
+		}
+
+		res.status(401).json({ ...err, message: err.message });
 	}
 };
 

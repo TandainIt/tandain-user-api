@@ -1,4 +1,4 @@
-import { generateRandomString, parseCookies } from '@/utils/utils';
+import { generateRandomString } from '@/utils/utils';
 import request from 'supertest';
 
 import { app, server } from '@/app';
@@ -32,7 +32,7 @@ describe('auth/controller', () => {
 	});
 
 	describe('POST /auth/login', () => {
-		it('should send refresh_token and success message and set cookie correctly', async () => {
+		it('should send id_token, refresh_token, and success message', async () => {
 			const mockLoginWithGoogleResult = {
 				idToken: generateRandomString(),
 				message: 'Logged in successfully',
@@ -49,13 +49,10 @@ describe('auth/controller', () => {
 				})
 				.expect(200);
 
-			const rawCookies = res.headers['set-cookie'][0];
-			const parsedCookies = parseCookies(rawCookies);
-
-			expect(typeof parsedCookies['id_token']).toBe('string');
 			expect(res.body).toEqual({
+				id_token: mockLoginWithGoogleResult.idToken,
+				message: 'Logged in successfully',
 				refresh_token: mockLoginWithGoogleResult.refreshToken,
-				message: mockLoginWithGoogleResult.message,
 			});
 		});
 
@@ -101,10 +98,6 @@ describe('auth/controller', () => {
 				})
 				.expect(200);
 
-			const rawCookies = res.headers['set-cookie'][0];
-			const parsedCookies = parseCookies(rawCookies);
-
-			expect(typeof parsedCookies['id_token']).toBe('string');
 			expect(res.body).toEqual({
 				id_token: mockNewIdToken,
 				expiry_date: mockNewIdTokenExpMs,
@@ -158,12 +151,6 @@ describe('auth/controller', () => {
 				.send()
 				.expect(302)
 				.expect('Location', '/');
-
-      
-      const rawCookies = res.headers['set-cookie'][0];
-			const parsedCookies = parseCookies(rawCookies);
-
-			expect(parsedCookies.id_token).toEqual('');
 		});
 
 		it('should throw "Something went wrong" if there is error in revoking authentication', async () => {
