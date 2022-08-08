@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+
 import { validateBody } from './validate';
 
 describe('middleware', () => {
@@ -34,9 +35,8 @@ describe('middleware', () => {
 			expect(nextFunction).toHaveBeenCalled();
 		});
 
-    
 		it('should call next function when there is duplication in validateBody params', () => {
-      const middlewareFn = validateBody(['code', 'redirectUri', 'code']);
+			const middlewareFn = validateBody(['code', 'redirectUri', 'code']);
 
 			mockRequest = {
 				body: {
@@ -52,7 +52,7 @@ describe('middleware', () => {
 			);
 
 			expect(nextFunction).toHaveBeenCalled();
-    });
+		});
 
 		it('should call next function when validateBody param array is empty', () => {
 			const middlewareFn = validateBody([]);
@@ -90,7 +90,9 @@ describe('middleware', () => {
 
 			expect(mockResponse.status).toHaveBeenCalledWith(400);
 			expect(mockResponse.send).toHaveBeenCalledWith({
-				message: 'Required parameter "code" is required',
+				code: 400,
+				name: 'Bad Request',
+				message: "Required parameter 'code' is required",
 			});
 		});
 
@@ -109,7 +111,9 @@ describe('middleware', () => {
 
 			expect(mockResponse.status).toHaveBeenCalledWith(400);
 			expect(mockResponse.send).toHaveBeenCalledWith({
-				message: 'Required parameter "code, redirectUri" are required',
+				code: 400,
+				name: 'Bad Request',
+				message: "Required parameter 'code, redirectUri' are required",
 			});
 		});
 	});
