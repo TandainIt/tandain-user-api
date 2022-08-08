@@ -181,8 +181,8 @@ class Auth {
 
 			if (!oldAuth) {
 				throw new TandainError(
-					'Required parameter "refresh_token" is invalid',
-					{ code: 400 }
+					"Required parameter 'refresh_token' is invalid",
+					{ code: 400, name: 'INVALID_REFRESH_TOKEN' }
 				);
 			}
 
@@ -190,15 +190,18 @@ class Auth {
 
 			if (oldAuth.revoked_by_ip || isAuthExpired) {
 				throw new TandainError(
-					'Required parameter "refresh_token" is expired',
-					{ code: 400 }
+					"Required parameter 'refresh_token' is expired",
+					{ code: 400, name: 'REFRESH_TOKEN_EXPIRED' }
 				);
 			}
 
 			const user = await User.findOne({ id: oldAuth.user_id });
 
 			if (!user) {
-				throw new TandainError('User is not found', { code: 400 });
+				throw new TandainError('User is not found', {
+					code: 400,
+					name: 'USER_NOT_FOUND',
+				});
 			}
 
 			const newCredentials = await this.generateCredentials({
