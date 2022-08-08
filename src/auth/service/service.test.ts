@@ -188,7 +188,7 @@ describe('auth/service', () => {
 		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
 			const { name, email, photoURL } = mockUser;
 
-      const mockCredentials = {
+			const mockCredentials = {
 				idToken: generateRandomString(128),
 				idTokenExpMs: Date.now() + 3600000,
 				refreshToken: generateRandomString(64),
@@ -208,7 +208,7 @@ describe('auth/service', () => {
 
 			findByEmailUserMock.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
-      generateCredentialsMock.mockResolvedValue(mockCredentials);
+			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -230,7 +230,7 @@ describe('auth/service', () => {
 		it('should return idToken and success message with the existing user email', async () => {
 			const { name, email, photoURL } = mockUser;
 
-      const mockCredentials = {
+			const mockCredentials = {
 				idToken: generateRandomString(128),
 				idTokenExpMs: Date.now() + 3600000,
 				refreshToken: generateRandomString(64),
@@ -249,7 +249,7 @@ describe('auth/service', () => {
 			});
 
 			findByEmailUserMock.mockResolvedValue(mockUser);
-      generateCredentialsMock.mockResolvedValue(mockCredentials);
+			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
 			const body = {
@@ -355,7 +355,12 @@ describe('auth/service', () => {
 
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
-			).rejects.toThrow('Required parameter "refresh_token" is invalid');
+			).rejects.toThrowError(
+				new TandainError("Required parameter 'refresh_token' is invalid", {
+					code: 400,
+					name: 'INVALID_REFRESH_TOKEN',
+				})
+			);
 		});
 
 		it('should throw "Required parameter refresh_token is expired" if refresh_token has been revoked', async () => {
@@ -378,7 +383,12 @@ describe('auth/service', () => {
 
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
-			).rejects.toThrow('Required parameter "refresh_token" is expired');
+			).rejects.toThrow(
+				new TandainError("Required parameter 'refresh_token' is expired", {
+					code: 400,
+					name: 'REFRESH_TOKEN_EXPIRED',
+				})
+			);
 		});
 
 		it('should throw "Required parameter refresh_token is expired" if refresh_token is expired', async () => {
@@ -401,7 +411,12 @@ describe('auth/service', () => {
 
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
-			).rejects.toThrow('Required parameter "refresh_token" is expired');
+			).rejects.toThrowError(
+				new TandainError("Required parameter 'refresh_token' is expired", {
+					code: 400,
+					name: 'REFRESH_TOKEN_EXPIRED',
+				})
+			);
 		});
 
 		it('should throw "User is not found" if user_id is invalid', async () => {
@@ -425,7 +440,12 @@ describe('auth/service', () => {
 
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
-			).rejects.toThrow('User is not found');
+			).rejects.toThrowError(
+				new TandainError('User is not found', {
+					code: 400,
+					name: 'USER_NOT_FOUND',
+				})
+			);
 		});
 
 		it('should throw "Something went wrong" if user is already not exists', async () => {
@@ -470,7 +490,7 @@ describe('auth/service', () => {
 
 			await expect(
 				Auth.refreshToken(mockOldRefreshToken, mockClientIp)
-			).rejects.toThrow('Something went wrong');
+			).rejects.toThrowError(new TandainError('Something went wrong'));
 		});
 	});
 
