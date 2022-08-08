@@ -8,7 +8,7 @@
 		"dev": "env-cmd -f .env.local ts-node-dev --respawn --notify false --prefer-ts --ignore-watch node_modules -- src/app.ts",
 		"build": "npx tsc && tsc-alias",
 		"start": "node dist/src/app.js",
-		"docker": "ts-node-dev --respawn --notify false --prefer-ts --ignore-watch node_modules -- src/app.ts",
+		"docker": "ts-node-dev --poll --respawn --notify false --prefer-ts --ignore-watch node_modules -- src/app.ts",
 		"test": "env-cmd -f .env.local jest"
 	},
 	"dependencies": {
