@@ -17,7 +17,7 @@
 	],
 	"components": {
 		"securitySchemes": {
-			"bearerAuth": {
+			"BearerAuth": {
 				"type": "http",
 				"scheme": "bearer",
 				"bearerFormat": "JWT"
@@ -257,7 +257,7 @@
 				"summary": "Revoke user authentication",
 				"security": [
 					{
-						"bearerAuth": []
+						"BearerAuth": ["write"]
 					}
 				],
 				"responses": {
