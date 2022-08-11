@@ -141,7 +141,9 @@
                   "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
 								},
                 "examples": {
-                  "INVALID_GRANT": "#/components/examples/INVALID_GRANT"
+                  "INVALID_GRANT": {
+                    "$ref": "#/components/examples/INVALID_GRANT"
+                  }
                 }
 							}
 						}
