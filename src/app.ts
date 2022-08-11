@@ -9,8 +9,10 @@ const app = express();
 const port = process.env.PORT;
 
 app.use(express.json());
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 app.set('trust proxy', true);
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+app.get('/api-docs.json', (_, res) => res.json(swaggerDocument));
 
 // ROUTER
 app.use('/api/v1', authRouter);

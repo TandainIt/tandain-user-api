@@ -17,7 +17,7 @@
 	],
 	"components": {
 		"securitySchemes": {
-			"bearerAuth": {
+			"BearerAuth": {
 				"type": "http",
 				"scheme": "bearer",
 				"bearerFormat": "JWT"
@@ -141,7 +141,9 @@
                   "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
 								},
                 "examples": {
-                  "INVALID_GRANT": "#/components/examples/INVALID_GRANT"
+                  "INVALID_GRANT": {
+                    "$ref": "#/components/examples/INVALID_GRANT"
+                  }
                 }
 							}
 						}
@@ -257,7 +259,7 @@
 				"summary": "Revoke user authentication",
 				"security": [
 					{
-						"bearerAuth": []
+						"BearerAuth": ["write"]
 					}
 				],
 				"responses": {
