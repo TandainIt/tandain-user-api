@@ -9,15 +9,17 @@ const mockLoginWithGoogle = jest.spyOn(Auth, 'loginWithGoogle');
 const mockRefreshToken = jest.spyOn(Auth, 'refreshToken');
 const mockRevoke = jest.spyOn(Auth, 'revoke');
 
-jest.mock('@/middleware/authenticate', () => jest.fn((req, _2, next) => {
-  req.user = {
-    id: 1,
-    name: 'test',
-    email: 'test@test.com'
-  }
+jest.mock('@/middleware/authenticate', () =>
+	jest.fn((req, _2, next) => {
+		req.user = {
+			id: 1,
+			name: 'test',
+			email: 'test@test.com',
+		};
 
-  next()
-}));
+		next();
+	})
+);
 
 const BASE_URL = '/api/v1';
 
@@ -32,9 +34,10 @@ describe('auth/controller', () => {
 	});
 
 	describe('POST /auth/login', () => {
-		it('should send id_token, refresh_token, and success message', async () => {
+		it('should send id_token, refresh_token, expiry_date and success message', async () => {
 			const mockLoginWithGoogleResult = {
 				idToken: generateRandomString(),
+				idTokenExpMs: Date.now() + 3600000,
 				message: 'Logged in successfully',
 				refreshToken: generateRandomString(64),
 			};
@@ -51,6 +54,7 @@ describe('auth/controller', () => {
 
 			expect(res.body).toEqual({
 				id_token: mockLoginWithGoogleResult.idToken,
+				expiry_date: mockLoginWithGoogleResult.idTokenExpMs,
 				message: 'Logged in successfully',
 				refresh_token: mockLoginWithGoogleResult.refreshToken,
 			});
@@ -154,26 +158,26 @@ describe('auth/controller', () => {
 		});
 
 		it('should throw "Something went wrong" if there is error in revoking authentication', async () => {
-      const mockIdToken = generateRandomString(128);
-      const mockError = {
-        name: 'Internal Server Error',
-        code: 500,
-        message: 'Something went wrong'
-      }
-      
-      mockRevoke.mockImplementation(() => {
-        throw new TandainError(mockError.message, {
-          code: mockError.code
-        })
-      })
+			const mockIdToken = generateRandomString(128);
+			const mockError = {
+				name: 'Internal Server Error',
+				code: 500,
+				message: 'Something went wrong',
+			};
 
-      const res = await request(app)
+			mockRevoke.mockImplementation(() => {
+				throw new TandainError(mockError.message, {
+					code: mockError.code,
+				});
+			});
+
+			const res = await request(app)
 				.post(`${BASE_URL}/auth/logout`)
 				.set('Cookie', `id_token=${mockIdToken};`)
 				.send()
-				.expect(mockError.code)
+				.expect(mockError.code);
 
-        expect(res.body).toEqual(mockError);
-    })
+			expect(res.body).toEqual(mockError);
+		});
 	});
 });

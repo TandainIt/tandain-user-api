@@ -145,7 +145,7 @@ class Auth {
 				user = await User.create(name, email, photoURL);
 			}
 
-			const { idToken, refreshToken, refreshTokenExpMs } =
+			const { idToken, refreshToken, idTokenExpMs, refreshTokenExpMs } =
 				await this.generateCredentials({
 					id: user.id,
 					name: user.name,
@@ -161,6 +161,7 @@ class Auth {
 
 			return {
 				idToken,
+				idTokenExpMs,
 				refreshToken,
 				message: 'Logged in successfully',
 			};

@@ -185,7 +185,7 @@ describe('auth/service', () => {
 	describe('loginWithGoogle', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
 
-		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
+		it('should return idToken, idTokenExpMs, refreshToken, and a success message with the new user email', async () => {
 			const { name, email, photoURL } = mockUser;
 
 			const mockCredentials = {
@@ -222,12 +222,15 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockCredentials.idToken);
-			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
-			expect(result.message).toEqual('Logged in successfully');
+			expect(result).toEqual({
+				idToken: mockCredentials.idToken,
+				idTokenExpMs: mockCredentials.idTokenExpMs,
+				refreshToken: mockCredentials.refreshToken,
+				message: 'Logged in successfully',
+			});
 		});
 
-		it('should return idToken and success message with the existing user email', async () => {
+		it('should return idToken, idTokenExpMs, refreshToken, and success message with the existing user email', async () => {
 			const { name, email, photoURL } = mockUser;
 
 			const mockCredentials = {
@@ -263,9 +266,12 @@ describe('auth/service', () => {
 				'127.0.0.1'
 			);
 
-			expect(result.idToken).toEqual(mockCredentials.idToken);
-			expect(result.refreshToken).toEqual(mockCredentials.refreshToken);
-			expect(result.message).toEqual('Logged in successfully');
+			expect(result).toEqual({
+				idToken: mockCredentials.idToken,
+				idTokenExpMs: mockCredentials.idTokenExpMs,
+				refreshToken: mockCredentials.refreshToken,
+				message: 'Logged in successfully',
+			});
 		});
 
 		it('should return error when exchanging code for token is error', async () => {

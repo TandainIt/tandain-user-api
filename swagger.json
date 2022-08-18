@@ -25,64 +25,64 @@
 		},
 
 		"schemas": {
-      "BASE_ERROR_RESPONSE": {
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      }
+			"BASE_ERROR_RESPONSE": {
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"code": {
+						"type": "integer",
+						"format": "int64"
+					},
+					"message": {
+						"type": "string"
+					}
+				}
+			}
 		},
 
-    "examples": {
-      "INTERNAL_SERVER_ERROR":{
-        "description": "Something went wrong with server.",
-        "value": {
-          "name": "INTERNAL_SERVER_ERROR",
-          "code": 500,
-          "message": "Internal Server Error"
-        }
-      },
-      "INVALID_GRANT": {
-        "description": "Authentication code is incorrect, invalid, or expired.",
-        "value": {
-          "name": "Invalid Grant",
-          "code": 400,
-          "message": "Required parameter 'code' is expired or invalid"
-      }
-      },
-      "INVALID_REFRESH_TOKEN":{
-        "description": "Refresh token is incorrect or invalid.",
-        "value": {
-          "name": "INVALID_REFRESH_TOKEN",
-          "code": 400,
-          "message": "Required parameter 'refresh_token' is invalid"
-        }
-      },
-      "REFRESH_TOKEN_EXPIRED":{
-        "description": "Refresh token is no longer valid.",
-        "value": {
-          "name": "REFRESH_TOKEN_EXPIRED",
-          "code": 400,
-          "message": "Required parameter 'refresh_token' is expired"
-        }
-      },
-      "USER_NOT_FOUND": {
-        "description": "The user corresponding to the parameter was not found.",
-        "value": {
-          "name": "USER_NOT_FOUND",
-          "code": 400,
-          "message": "User is not found"
-        }
-      }
-    }
+		"examples": {
+			"INTERNAL_SERVER_ERROR": {
+				"description": "Something went wrong with server.",
+				"value": {
+					"name": "INTERNAL_SERVER_ERROR",
+					"code": 500,
+					"message": "Internal Server Error"
+				}
+			},
+			"INVALID_GRANT": {
+				"description": "Authentication code is incorrect, invalid, or expired.",
+				"value": {
+					"name": "Invalid Grant",
+					"code": 400,
+					"message": "Required parameter 'code' is expired or invalid"
+				}
+			},
+			"INVALID_REFRESH_TOKEN": {
+				"description": "Refresh token is incorrect or invalid.",
+				"value": {
+					"name": "INVALID_REFRESH_TOKEN",
+					"code": 400,
+					"message": "Required parameter 'refresh_token' is invalid"
+				}
+			},
+			"REFRESH_TOKEN_EXPIRED": {
+				"description": "Refresh token is no longer valid.",
+				"value": {
+					"name": "REFRESH_TOKEN_EXPIRED",
+					"code": 400,
+					"message": "Required parameter 'refresh_token' is expired"
+				}
+			},
+			"USER_NOT_FOUND": {
+				"description": "The user corresponding to the parameter was not found.",
+				"value": {
+					"name": "USER_NOT_FOUND",
+					"code": 400,
+					"message": "User is not found"
+				}
+			}
+		}
 	},
 	"paths": {
 		"/api/v1/auth/login": {
@@ -124,6 +124,11 @@
 											"type": "string",
 											"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIzMDAxIiwic3ViIjoxLCJleHAiOjE2NTk4NzY3MTIyMDMsImF1ZCI6IjMwMDEiLCJuYW1lIjoiUGVpdHJhIEVyZGkiLCJlbWFpbCI6InBlaXRyYWVAZ21haWwuY29tIiwiaWF0IjoxNjU5ODczMTEyfQ.SVu5jVWTPxy-eBTQWTq58iba7uuryeNNRgZYAWwfqyA"
 										},
+										"expiry_date": {
+											"type": "integer",
+											"format": "int64",
+											"example": 1660807905766
+										},
 										"refresh_token": {
 											"type": "string",
 											"example": "avvRXUia+DXMtm77YxnueZh3clI7DrOjwDUNdqjb78JDfaxSar7yq2c4BB/sql5r"
@@ -138,30 +143,30 @@
 						"content": {
 							"application/json": {
 								"schema": {
-                  "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
+									"$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
 								},
-                "examples": {
-                  "INVALID_GRANT": {
-                    "$ref": "#/components/examples/INVALID_GRANT"
-                  }
-                }
+								"examples": {
+									"INVALID_GRANT": {
+										"$ref": "#/components/examples/INVALID_GRANT"
+									}
+								}
 							}
 						}
 					},
 					"500": {
 						"description": "Something went wrong with server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
-                },
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
-                  }
-                }
-              }
-            }
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
+								},
+								"examples": {
+									"INTERNAL_SERVER_ERROR": {
+										"$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
+									}
+								}
+							}
+						}
 					}
 				}
 			}
@@ -222,34 +227,34 @@
 								"schema": {
 									"$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
 								},
-                "examples": {
-                  "INVALID_REFRESH_TOKEN": {
-                    "$ref": "#/components/examples/INVALID_REFRESH_TOKEN"
-                  },
-                  "REFRESH_TOKEN_EXPIRED": {
-                    "$ref": "#/components/examples/REFRESH_TOKEN_EXPIRED"
-                  },
-                  "USER_NOT_FOUND": {
-                    "$ref": "#/components/examples/USER_NOT_FOUND"
-                  }
-                }
+								"examples": {
+									"INVALID_REFRESH_TOKEN": {
+										"$ref": "#/components/examples/INVALID_REFRESH_TOKEN"
+									},
+									"REFRESH_TOKEN_EXPIRED": {
+										"$ref": "#/components/examples/REFRESH_TOKEN_EXPIRED"
+									},
+									"USER_NOT_FOUND": {
+										"$ref": "#/components/examples/USER_NOT_FOUND"
+									}
+								}
 							}
 						}
 					},
 					"500": {
 						"description": "Something went wrong with server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
-                },
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
-                  }
-                }
-              }
-            }
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
+								},
+								"examples": {
+									"INTERNAL_SERVER_ERROR": {
+										"$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
+									}
+								}
+							}
+						}
 					}
 				}
 			}
@@ -268,18 +273,18 @@
 					},
 					"500": {
 						"description": "Something went wrong with server",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
-                },
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
-                  }
-                }
-              }
-            }
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/BASE_ERROR_RESPONSE"
+								},
+								"examples": {
+									"INTERNAL_SERVER_ERROR": {
+										"$ref": "#/components/examples/INTERNAL_SERVER_ERROR"
+									}
+								}
+							}
+						}
 					}
 				}
 			}

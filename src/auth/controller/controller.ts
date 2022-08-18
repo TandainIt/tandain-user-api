@@ -13,13 +13,15 @@ router.post(
 		try {
 			const { code, redirectUri } = req.body;
 
-			const { idToken, message, refreshToken } = await Auth.loginWithGoogle(
-				code,
-				redirectUri,
-				req.ip
-			);
+			const credentials = await Auth.loginWithGoogle(code, redirectUri, req.ip);
+			const { idToken, idTokenExpMs, refreshToken, message } = credentials;
 
-			res.send({ message, id_token: idToken, refresh_token: refreshToken });
+			res.send({
+				message,
+				id_token: idToken,
+				expiry_date: idTokenExpMs,
+				refresh_token: refreshToken,
+			});
 		} catch (err) {
 			res.status(err.code).json({ ...err, message: err.message });
 		}
