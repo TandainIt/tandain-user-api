@@ -1,5 +1,6 @@
 import TandainError from '@/utils/TandainError';
 import UserModel from '../model';
+import { WhereUserOne } from '../model/model.types';
 
 class User {
 	public id: number;
@@ -42,7 +43,7 @@ class User {
 		}
 	}
 
-	static async findOne(wheres: any) {
+	static async findOne(wheres: WhereUserOne) {
 		try {
 			const user = await UserModel.findOne(wheres);
 

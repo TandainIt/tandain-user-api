@@ -17,6 +17,7 @@ export const validateBody = (keys: string[]) => {
 
 		const notExistBodyStr = notExistBodyKeys.join(', ');
 
+    // TODO: Change 'parameter' to 'body'
 		const message = `Required parameter '${notExistBodyStr}' ${
 			notExistBodyKeys.length > 1 ? 'are' : 'is'
 		} required`;

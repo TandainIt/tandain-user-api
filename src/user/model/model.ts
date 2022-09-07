@@ -4,6 +4,7 @@ import { QueryResult } from 'pg';
 import User from '../service';
 import TandainError from '@/utils/TandainError';
 import { joinQuery } from '@/utils/model';
+import { WhereUserOne } from './model.types';
 
 class UserModel {
 	static async create(
@@ -41,7 +42,7 @@ class UserModel {
 		}
 	}
 
-  static async findOne(wheres: any) {
+	static async findOne(wheres: WhereUserOne) {
 		const whereQuery = joinQuery(wheres);
 
 		try {
@@ -49,17 +50,17 @@ class UserModel {
 				`SELECT * FROM users WHERE ${whereQuery}`
 			);
 
-      if (result.rows.length === 0) {
+			if (result.rows.length === 0) {
 				return null;
 			}
 
 			const user = result.rows[0];
 
-      return user
+			return user;
 		} catch (err) {
 			throw new TandainError(err.message);
 		}
-	} 
+	}
 }
 
 export default UserModel;
