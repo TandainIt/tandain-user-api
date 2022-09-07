@@ -186,7 +186,7 @@ describe('auth/service', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
 
 		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
-			const { name, email, photoURL } = mockUser;
+			const { name, email, photo_url } = mockUser;
 
 			const mockCredentials = {
 				idToken: generateRandomString(128),
@@ -203,7 +203,7 @@ describe('auth/service', () => {
 			getUserProfileMock.mockResolvedValue({
 				name,
 				email,
-				photoURL,
+				photo_url,
 			});
 
 			findByEmailUserMock.mockResolvedValue(null);
@@ -228,7 +228,7 @@ describe('auth/service', () => {
 		});
 
 		it('should return idToken and success message with the existing user email', async () => {
-			const { name, email, photoURL } = mockUser;
+			const { name, email, photo_url } = mockUser;
 
 			const mockCredentials = {
 				idToken: generateRandomString(128),
@@ -245,10 +245,10 @@ describe('auth/service', () => {
 			getUserProfileMock.mockResolvedValue({
 				name,
 				email,
-				photoURL,
+				photo_url,
 			});
 
-			findByEmailUserMock.mockResolvedValue(mockUser);
+			findOneUserMock.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
@@ -311,7 +311,7 @@ describe('auth/service', () => {
 				id: 15,
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.com',
+				photo_url: 'test.com',
 			};
 
 			const mockCredentials = {
@@ -468,7 +468,7 @@ describe('auth/service', () => {
 				id: 15,
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.com',
+				photo_url: 'test.com',
 			};
 
 			const mockCredentials = {

@@ -37,7 +37,7 @@ describe('user/model', () => {
 			};
 
 			const { id, name, email, photo_url } = mockRows.rows[0];
-			const mockResult = { id, name, email, photoURL: photo_url };
+			const mockResult = { id, name, email, photo_url };
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
@@ -59,7 +59,7 @@ describe('user/model', () => {
 			};
 
 			const { id, name, email, photo_url } = mockRows.rows[0];
-			const mockResult = { id, name, email, photoURL: photo_url };
+			const mockResult = { id, name, email, photo_url };
 
 			pool.query.mockResolvedValueOnce(mockRows);
 
@@ -99,7 +99,7 @@ describe('user/model', () => {
 			};
 
 			const { id, name, email, photo_url } = mockRows.rows[0];
-			const mockResult = { id, name, email, photoURL: photo_url };
+			const mockResult = { id, name, email, photo_url };
 
 			pool.query.mockResolvedValueOnce(mockRows);
 

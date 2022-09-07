@@ -12,11 +12,11 @@ describe('user/service', () => {
 	});
 
 	describe('create', () => {
-		it('should success create a user with name, email, and photoURL ', async () => {
+		it('should success create a user with name, email, and photo_url ', async () => {
 			const mockUser = {
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.jpg',
+				photo_url: 'test.jpg',
 			};
 
 			mockCreate.mockResolvedValue({
@@ -27,7 +27,7 @@ describe('user/service', () => {
 			const user = await User.create(
 				mockUser.name,
 				mockUser.email,
-				mockUser.photoURL
+				mockUser.photo_url
 			);
 
 			expect(user).toMatchObject({
@@ -45,7 +45,7 @@ describe('user/service', () => {
 			mockCreate.mockResolvedValue({
 				id: 1,
 				...mockUser,
-				photoURL: undefined,
+				photo_url: undefined,
 			});
 
 			const user = await User.create(mockUser.name, mockUser.email);
@@ -53,7 +53,7 @@ describe('user/service', () => {
 			expect(user).toMatchObject({
 				id: 1,
 				...mockUser,
-				photoURL: undefined,
+				photo_url: undefined,
 			});
 		});
 
@@ -61,7 +61,7 @@ describe('user/service', () => {
 			const mockUser = {
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.jpg',
+				photo_url: 'test.jpg',
 			};
 
 			mockCreate.mockRejectedValue({
@@ -69,7 +69,7 @@ describe('user/service', () => {
 			});
 
 			await expect(
-				User.create(mockUser.name, mockUser.email, mockUser.photoURL)
+				User.create(mockUser.name, mockUser.email, mockUser.photo_url)
 			).rejects.toThrowError(
 				new TandainError('Key (email)=(test@test.com) already exists')
 			);
@@ -82,7 +82,7 @@ describe('user/service', () => {
 				id: 1,
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.jpg',
+				photo_url: 'test.jpg',
 			};
 
 			mockFindByEmail.mockResolvedValue(mockUser);
@@ -124,12 +124,7 @@ describe('user/service', () => {
 
 			const user = await User.findOne({ id: mockUser.id });
 
-			expect(user).toEqual({
-				id: 1,
-				name: 'test',
-				email: 'test@test.com',
-				photoURL: 'test.jpg',
-			});
+			expect(user).toEqual(mockUser);
 		});
 
 		it('should return user by email', async () => {
@@ -144,12 +139,7 @@ describe('user/service', () => {
 
 			const user = await User.findOne({ email: mockUser.email });
 
-			expect(user).toEqual({
-				id: 1,
-				name: 'test',
-				email: 'test@test.com',
-				photoURL: 'test.jpg',
-			});
+			expect(user).toEqual(mockUser);
 		});
 
 		it('should return null if user is not exists', async () => {

@@ -6,13 +6,13 @@ class User {
 	public id: number;
 	public name: string;
 	public email: string;
-	public photoURL: string | undefined;
+	public photo_url: string | undefined;
 
 	constructor(id: number, name: string, email: string, photoURL?: string) {
 		this.id = id;
 		this.name = name;
 		this.email = email;
-		this.photoURL = photoURL;
+		this.photo_url = photoURL;
 	}
 
 	static async create(
@@ -23,7 +23,7 @@ class User {
 		try {
 			const user = await UserModel.create(name, email, photoURL);
 
-			return new User(user.id, user.name, user.email, user.photoURL);
+			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
 			throw new TandainError(err.message, { name: err.name, code: err.code });
 		}
@@ -37,7 +37,7 @@ class User {
 				return null;
 			}
 
-			return new User(user.id, user.name, user.email, user.photoURL);
+			return new User(user.id, user.name, user.email, user.photo_url);
 		} catch (err) {
 			throw new TandainError(err.message, { name: err.name, code: err.code });
 		}

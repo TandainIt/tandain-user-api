@@ -42,7 +42,7 @@ class UserModel {
 		}
 	}
 
-	static async findOne(wheres: WhereUserOne) {
+	static async findOne(wheres: WhereUserOne): Promise<User | null> {
 		const whereQuery = joinQuery(wheres);
 
 		try {
