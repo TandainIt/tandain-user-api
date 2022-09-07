@@ -139,7 +139,7 @@ class Auth {
 			const userProfile = await this.getUserProfile(access_token as string);
 			const { name, email, photoURL } = userProfile;
 
-			let user = await User.findByEmail(email);
+			let user = await User.findOne({ email });
 
 			if (!user) {
 				user = await User.create(name, email, photoURL);

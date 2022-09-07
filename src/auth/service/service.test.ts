@@ -9,9 +9,9 @@ import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
+jest.mock('@/user/service');
 
 const createUserMock = jest.spyOn(User, 'create');
-const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
 const findOneUserMock = jest.spyOn(User, 'findOne');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
@@ -74,9 +74,11 @@ jest.mock('googleapis', () => {
 
 describe('auth/service', () => {
 	let mockAxios: jest.Mocked<typeof axios>;
+	let mockUserService: jest.Mocked<typeof User>;
 
 	beforeEach(() => {
 		mockAxios = axios as jest.Mocked<typeof axios>;
+		mockUserService = User as jest.Mocked<typeof User>;
 	});
 
 	afterEach(() => {
@@ -186,7 +188,7 @@ describe('auth/service', () => {
 		const mockUser = new User(1, 'test', 'test@test.com', 'https://test.com');
 
 		it('should return idToken, refreshToken, and a success message with the new user email', async () => {
-			const { name, email, photoURL } = mockUser;
+			const { name, email, photo_url } = mockUser;
 
 			const mockCredentials = {
 				idToken: generateRandomString(128),
@@ -203,10 +205,10 @@ describe('auth/service', () => {
 			getUserProfileMock.mockResolvedValue({
 				name,
 				email,
-				photoURL,
+				photo_url,
 			});
 
-			findByEmailUserMock.mockResolvedValue(null);
+			mockUserService.findOne.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
@@ -228,7 +230,7 @@ describe('auth/service', () => {
 		});
 
 		it('should return idToken and success message with the existing user email', async () => {
-			const { name, email, photoURL } = mockUser;
+			const { name, email, photo_url } = mockUser;
 
 			const mockCredentials = {
 				idToken: generateRandomString(128),
@@ -245,10 +247,10 @@ describe('auth/service', () => {
 			getUserProfileMock.mockResolvedValue({
 				name,
 				email,
-				photoURL,
+				photo_url,
 			});
 
-			findByEmailUserMock.mockResolvedValue(mockUser);
+			mockUserService.findOne.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 
@@ -311,7 +313,7 @@ describe('auth/service', () => {
 				id: 15,
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.com',
+				photo_url: 'test.com',
 			};
 
 			const mockCredentials = {
@@ -468,7 +470,7 @@ describe('auth/service', () => {
 				id: 15,
 				name: 'test',
 				email: 'test@test.com',
-				photoURL: 'test.com',
+				photo_url: 'test.com',
 			};
 
 			const mockCredentials = {

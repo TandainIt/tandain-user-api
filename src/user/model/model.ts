@@ -4,6 +4,7 @@ import { QueryResult } from 'pg';
 import User from '../service';
 import TandainError from '@/utils/TandainError';
 import { joinQuery } from '@/utils/model';
+import { WhereUserOne } from './model.types';
 
 class UserModel {
 	static async create(
@@ -23,10 +24,12 @@ class UserModel {
 		}
 	}
 
-	static async findByEmail(email: string) {
+	static async findOne(wheres: WhereUserOne): Promise<User | null> {
+		const whereQuery = joinQuery(wheres);
+
 		try {
 			const result: QueryResult = await pool.query(
-				`SELECT * FROM users WHERE email = '${email}'`
+				`SELECT * FROM users WHERE ${whereQuery}`
 			);
 
 			if (result.rows.length === 0) {
@@ -35,31 +38,11 @@ class UserModel {
 
 			const user = result.rows[0];
 
-			return new User(user.id, user.name, user.email, user.photo_url);
+			return user;
 		} catch (err) {
 			throw new TandainError(err.message);
 		}
 	}
-
-  static async findOne(wheres: any) {
-		const whereQuery = joinQuery(wheres);
-
-		try {
-			const result: QueryResult = await pool.query(
-				`SELECT * FROM users WHERE ${whereQuery}`
-			);
-
-      if (result.rows.length === 0) {
-				return null;
-			}
-
-			const user = result.rows[0];
-
-      return user
-		} catch (err) {
-			throw new TandainError(err.message);
-		}
-	} 
 }
 
 export default UserModel;
