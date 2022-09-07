@@ -9,9 +9,9 @@ import { PARAM_CODE_INVALID, PARAM_REDIRECT_URI_INVALID } from '../errors';
 import TandainError from '@/utils/TandainError';
 
 jest.mock('axios');
+jest.mock('@/user/service');
 
 const createUserMock = jest.spyOn(User, 'create');
-const findByEmailUserMock = jest.spyOn(User, 'findByEmail');
 const findOneUserMock = jest.spyOn(User, 'findOne');
 
 const exchangeOAuthCodeMock = jest.spyOn(Auth as any, 'exchangeOAuthCode');
@@ -74,9 +74,11 @@ jest.mock('googleapis', () => {
 
 describe('auth/service', () => {
 	let mockAxios: jest.Mocked<typeof axios>;
+	let mockUserService: jest.Mocked<typeof User>;
 
 	beforeEach(() => {
 		mockAxios = axios as jest.Mocked<typeof axios>;
+		mockUserService = User as jest.Mocked<typeof User>;
 	});
 
 	afterEach(() => {
@@ -206,7 +208,7 @@ describe('auth/service', () => {
 				photo_url,
 			});
 
-			findByEmailUserMock.mockResolvedValue(null);
+			mockUserService.findOne.mockResolvedValue(null);
 			createUserMock.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
@@ -248,7 +250,7 @@ describe('auth/service', () => {
 				photo_url,
 			});
 
-			findOneUserMock.mockResolvedValue(mockUser);
+			mockUserService.findOne.mockResolvedValue(mockUser);
 			generateCredentialsMock.mockResolvedValue(mockCredentials);
 			insertOneAuthMock.mockResolvedValue({});
 

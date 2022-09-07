@@ -85,56 +85,6 @@ describe('user/model', () => {
 		});
 	});
 
-	describe('findByEmail', () => {
-		it('should return user if email exists', async () => {
-			const mockRows = {
-				rows: [
-					{
-						id: 1,
-						name: 'test',
-						email: 'test@test.com',
-						photo_url: 'test.jpg',
-					},
-				],
-			};
-
-			const { id, name, email, photo_url } = mockRows.rows[0];
-			const mockResult = { id, name, email, photo_url };
-
-			pool.query.mockResolvedValueOnce(mockRows);
-
-			const user = await UserModel.findByEmail('test@test.com');
-
-			expect(user).toEqual(mockResult);
-		});
-
-		it('should return null if email does not exists', async () => {
-			const mockRows = {
-				rows: [],
-			};
-
-			pool.query.mockResolvedValueOnce(mockRows);
-
-			const user = await UserModel.findByEmail('test@test.com');
-
-			expect(user).toEqual(null);
-		});
-
-		it('should throw an error when PostgreSQL system is error', async () => {
-			const posgresqlError = {
-				name: 'system_error',
-				code: '58000',
-				message: 'Failed to retrieve memory usage at process exit',
-			};
-
-			pool.query.mockRejectedValue(posgresqlError);
-
-			await expect(UserModel.findByEmail('test@test.com')).rejects.toThrowError(
-				new TandainError('Failed to retrieve memory usage at process exit')
-			);
-		});
-	});
-
 	describe('findOne', () => {
 		it('should return user by id', async () => {
 			const mockId = 1;

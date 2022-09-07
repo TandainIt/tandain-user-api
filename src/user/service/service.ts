@@ -29,20 +29,6 @@ class User {
 		}
 	}
 
-	static async findByEmail(email: string) {
-		try {
-			const user = await UserModel.findByEmail(email);
-
-			if (!user) {
-				return null;
-			}
-
-			return new User(user.id, user.name, user.email, user.photo_url);
-		} catch (err) {
-			throw new TandainError(err.message, { name: err.name, code: err.code });
-		}
-	}
-
 	static async findOne(wheres: WhereUserOne) {
 		try {
 			const user = await UserModel.findOne(wheres);
